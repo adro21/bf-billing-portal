@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Billing Dashboard</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Billing Portal</h1>
+            <div class="nav-user">
+                <span class="user-email"><%= email %></span>
+                <a href="/logout" class="logout-btn">Logout</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <div class="dashboard-header">
+                <h2>Your Billing History</h2>
+                <p class="dashboard-subtitle">Logged in as: <strong><%= email %></strong></p>
+            </div>
+
+            <% if (error) { %>
+                <div class="alert alert-error">
+                    <%= error %>
+                </div>
+            <% } %>
+
+            <% if (invoices && invoices.length > 0) { %>
+                <div class="invoices-container">
+                    <div class="invoices-header">
+                        <h3>Recent Invoices</h3>
+                        <p>Found <%= invoices.length %> invoice<%= invoices.length !== 1 ? 's' : '' %></p>
+                    </div>
+
+                    <div class="invoices-grid">
+                        <% invoices.forEach(function(invoice) { %>
+                            <div class="invoice-card">
+                                <div class="invoice-header">
+                                    <div class="invoice-amount">
+                                        <%= (invoice.amount_paid / 100).toLocaleString('en-US', { 
+                                            style: 'currency', 
+                                            currency: invoice.currency.toUpperCase() 
+                                        }) %>
+                                    </div>
+                                    <div class="invoice-status status-<%= invoice.status %>">
+                                        <%= invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) %>
+                                    </div>
+                                </div>
+                                
+                                <div class="invoice-details">
+                                    <p class="invoice-date">
+                                        <strong>Date:</strong> 
+                                        <%= new Date(invoice.created * 1000).toLocaleDateString('en-US', { 
+                                            year: 'numeric', 
+                                            month: 'long', 
+                                            day: 'numeric' 
+                                        }) %>
+                                    </p>
+                                    
+                                    <% if (invoice.number) { %>
+                                        <p class="invoice-number">
+                                            <strong>Invoice #:</strong> <%= invoice.number %>
+                                        </p>
+                                    <% } %>
+                                    
+                                    <% if (invoice.description) { %>
+                                        <p class="invoice-description">
+                                            <strong>Description:</strong> <%= invoice.description %>
+                                        </p>
+                                    <% } %>
+                                </div>
+
+                                <% if (invoice.hosted_invoice_url) { %>
+                                    <div class="invoice-actions">
+                                        <a href="<%= invoice.hosted_invoice_url %>" 
+                                           target="_blank" 
+                                           rel="noopener noreferrer"
+                                           class="btn btn-secondary">
+                                            View Receipt / Download PDF
+                                        </a>
+                                    </div>
+                                <% } %>
+                            </div>
+                        <% }); %>
+                    </div>
+                </div>
+            <% } else if (!error) { %>
+                <div class="empty-state">
+                    <h3>No Invoices Found</h3>
+                    <p>We couldn't find any billing history for <strong><%= email %></strong>.</p>
+                    <p>This could mean:</p>
+                    <ul>
+                        <li>You haven't made any purchases yet</li>
+                        <li>Your billing email might be different from your login email</li>
+                        <li>Your account might not be set up in our billing system yet</li>
+                    </ul>
+                </div>
+            <% } %>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 MySaaS. Secure billing portal powered by Stripe.</p>
+        </div>
+    </footer>
+</body>
+</html> 

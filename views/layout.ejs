@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title><%= typeof title !== 'undefined' ? title : 'Billing Portal' %></title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1 class="nav-brand">Billing Portal</h1>
+            <% if (typeof email !== 'undefined' && email) { %>
+                <div class="nav-user">
+                    <span class="user-email"><%= email %></span>
+                    <a href="/logout" class="logout-btn">Logout</a>
+                </div>
+            <% } %>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <%- body %>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 MySaaS. Secure billing portal powered by Stripe.</p>
+        </div>
+    </footer>
+</body>
+</html> 

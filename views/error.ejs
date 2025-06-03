@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Error - Billing Portal</title>
+    <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+    <div class="error-container">
+        <div class="error-card">
+            <h1>🚨</h1>
+            <h2>Something Went Wrong</h2>
+            <p><%= error || 'An unexpected error occurred. Please try again.' %></p>
+            <a href="/" class="btn btn-primary">Go to Login</a>
+        </div>
+    </div>
+
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2024 MySaaS. Secure billing portal powered by Stripe.</p>
+        </div>
+    </footer>
+</body>
+</html> 
