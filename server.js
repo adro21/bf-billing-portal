@@ -91,6 +91,27 @@ const authenticateToken = async (req, res, next) => {
   }
 };
 
+// Admin authentication middleware
+const authenticateAdmin = (req, res, next) => {
+  const adminSession = req.cookies.adminAuth;
+  
+  if (!adminSession) {
+    return res.redirect('/admin?error=Please log in to access the admin portal');
+  }
+
+  try {
+    const decoded = jwt.verify(adminSession, process.env.JWT_SECRET);
+    if (decoded.role !== 'admin') {
+      return res.redirect('/admin?error=Invalid admin session');
+    }
+    req.admin = decoded;
+    next();
+  } catch (error) {
+    res.clearCookie('adminAuth');
+    return res.redirect('/admin?error=Your admin session has expired. Please log in again');
+  }
+};
+
 // Routes
 
 // Landing page with email form
@@ -642,6 +663,205 @@ app.get('/download-all-invoices', async (req, res) => {
 app.get('/logout', (req, res) => {
   res.clearCookie('auth');
   res.redirect('/?message=You have been logged out successfully');
+});
+
+// Admin login page
+app.get('/admin', (req, res) => {
+  const error = req.query.error;
+  const message = req.query.message;
+  res.render('admin-login', { error, message });
+});
+
+// Admin login processing
+app.post('/admin/login', async (req, res) => {
+  const { adminPassword } = req.body;
+  
+  if (!adminPassword) {
+    return res.redirect('/admin?error=Please enter the admin password');
+  }
+  
+  // Verify admin password
+  const expectedPassword = process.env.ADMIN_PASSWORD;
+  if (!expectedPassword || expectedPassword.length < 12) {
+    console.error('❌ ADMIN_PASSWORD not set or too short (minimum 12 characters required)');
+    return res.redirect('/admin?error=Admin portal is not properly configured');
+  }
+  
+  if (adminPassword !== expectedPassword) {
+    console.log(`⚠️ Failed admin login attempt at ${new Date().toISOString()}`);
+    return res.redirect('/admin?error=Invalid admin password');
+  }
+  
+  // Create admin session
+  const adminToken = jwt.sign(
+    { role: 'admin', loginTime: Date.now() },
+    process.env.JWT_SECRET,
+    { expiresIn: '2h' } // 2 hour admin sessions
+  );
+  
+  // Set admin auth cookie
+  res.cookie('adminAuth', adminToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === 'production',
+    sameSite: 'Lax',
+    maxAge: 2 * 60 * 60 * 1000 // 2 hours
+  });
+  
+  console.log(`✅ Admin login successful at ${new Date().toISOString()}`);
+  res.redirect('/admin/dashboard');
+});
+
+// Admin dashboard
+app.get('/admin/dashboard', authenticateAdmin, (req, res) => {
+  res.render('admin-dashboard', { 
+    error: null, 
+    message: null, 
+    customer: null, 
+    searchEmail: null 
+  });
+});
+
+// Customer lookup
+app.post('/admin/lookup', authenticateAdmin, async (req, res) => {
+  const { customerEmail } = req.body;
+  
+  if (!customerEmail || !customerEmail.includes('@')) {
+    return res.render('admin-dashboard', { 
+      error: 'Please enter a valid email address', 
+      message: null, 
+      customer: null, 
+      searchEmail: customerEmail 
+    });
+  }
+  
+  try {
+    // Look up customer in Stripe
+    const customers = await stripe.customers.list({ 
+      email: customerEmail.toLowerCase().trim(), 
+      limit: 1 
+    });
+    
+    if (customers.data.length === 0) {
+      return res.render('admin-dashboard', { 
+        error: `No customer found with email: ${customerEmail}`, 
+        message: null, 
+        customer: null, 
+        searchEmail: customerEmail 
+      });
+    }
+    
+    const customer = customers.data[0];
+    
+    // Log the lookup for security audit
+    console.log(`🔍 Admin customer lookup: ${customerEmail} (${customer.id}) at ${new Date().toISOString()}`);
+    
+    res.render('admin-dashboard', { 
+      error: null, 
+      message: null, 
+      customer, 
+      searchEmail: customerEmail 
+    });
+    
+  } catch (error) {
+    console.error('Error looking up customer:', error);
+    res.render('admin-dashboard', { 
+      error: 'Failed to search for customer. Please try again.', 
+      message: null, 
+      customer: null, 
+      searchEmail: customerEmail 
+    });
+  }
+});
+
+// View customer dashboard (admin)
+app.get('/admin/view-customer/:customerId', authenticateAdmin, async (req, res) => {
+  const { customerId } = req.params;
+  
+  if (!customerId || !customerId.startsWith('cus_')) {
+    return res.redirect('/admin/dashboard?error=Invalid customer ID');
+  }
+  
+  try {
+    // Fetch customer to verify it exists
+    const customer = await stripe.customers.retrieve(customerId);
+    
+    // Fetch billing data using the same logic as dashboard
+    const [
+      invoicesResponse,
+      subscriptionsResponse,
+      paymentMethodsResponse,
+      upcomingInvoiceResponse,
+      customerPortalSession
+    ] = await Promise.allSettled([
+      stripe.invoices.list({ 
+        customer: customerId,
+        limit: 50,
+        expand: ['data.subscription']
+      }),
+      
+      stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        expand: ['data.items.data.price.product']
+      }),
+      
+      stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'card'
+      }),
+      
+      stripe.invoices.retrieveUpcoming({
+        customer: customerId
+      }).catch(() => null),
+      
+      stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.BASE_URL.replace(/\/$/, '')}/admin/dashboard`
+      })
+    ]);
+
+    // Extract data from settled promises
+    const allInvoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
+    const subscriptions = subscriptionsResponse.status === 'fulfilled' ? subscriptionsResponse.value.data : [];
+    const paymentMethods = paymentMethodsResponse.status === 'fulfilled' ? paymentMethodsResponse.value.data : [];
+    const upcomingInvoice = upcomingInvoiceResponse.status === 'fulfilled' ? upcomingInvoiceResponse.value : null;
+    const customerPortalUrl = customerPortalSession.status === 'fulfilled' ? customerPortalSession.value.url : null;
+
+    // Filter out $0 invoices (trials, credits, etc.) to avoid user confusion
+    const invoices = allInvoices.filter(invoice => invoice.total > 0);
+
+    // Log the admin access for security audit
+    console.log(`👁️ Admin viewing customer dashboard: ${customer.email} (${customerId}) at ${new Date().toISOString()}`);
+    
+    // Render the same dashboard template but with admin context
+    res.render('dashboard', { 
+      email: customer.email || `Admin View (${customerId})`,
+      customer,
+      invoices,
+      subscriptions,
+      paymentMethods,
+      upcomingInvoice,
+      customerPortalUrl,
+      error: null,
+      isAdminView: true
+    });
+    
+  } catch (error) {
+    console.error('Error in admin customer view:', error);
+    
+    if (error.type === 'StripeInvalidRequestError' && error.code === 'resource_missing') {
+      return res.redirect('/admin/dashboard?error=Customer not found in Stripe');
+    }
+    
+    return res.redirect('/admin/dashboard?error=Failed to load customer dashboard');
+  }
+});
+
+// Admin logout
+app.get('/admin/logout', (req, res) => {
+  res.clearCookie('adminAuth');
+  console.log(`🚪 Admin logout at ${new Date().toISOString()}`);
+  res.redirect('/admin?message=You have been logged out successfully');
 });
 
 // 404 handler
