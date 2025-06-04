@@ -46,7 +46,7 @@
     </nav>
 
     <!-- Main Content -->
-    <div class="container my-5 flex-grow-1">
+    <div class="container my-5 flex-grow-1" <% if (customer && customer.id) { %>data-customer-id="<%= customer.id %>"<% } %>>
         <!-- Header -->
         <div class="mb-5">
             <h1 class="h3 fw-bold text-slate-900 mb-1">Billing Overview</h1>
@@ -786,8 +786,21 @@
             }, 500);
             
             try {
+                // Build download URL - include customer ID for admin access
+                let downloadUrl = '/download-all-invoices';
+                
+                // Check if this is an admin view by looking at the URL
+                if (window.location.pathname.includes('/admin/') || window.location.pathname.includes('/view-customer/')) {
+                    // Extract customer ID from the current page's customer data
+                    const customerIdElement = document.querySelector('[data-customer-id]');
+                    if (customerIdElement) {
+                        const customerId = customerIdElement.getAttribute('data-customer-id');
+                        downloadUrl += '?customerId=' + customerId;
+                    }
+                }
+                
                 // Trigger download
-                const response = await fetch('/download-all-invoices', {
+                const response = await fetch(downloadUrl, {
                     method: 'GET',
                     credentials: 'same-origin'
                 });

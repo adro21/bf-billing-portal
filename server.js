@@ -397,26 +397,58 @@ app.get('/download-all-invoices', async (req, res) => {
   try {
     let customer = null;
     let email = null;
+    let isAdminAccess = false;
 
-    // JWT authentication for both user and admin sessions
-    const token = req.cookies.auth;
-    if (!token) {
-      return res.status(401).json({ error: 'Authentication required' });
-    }
+    // Check for customer authentication first
+    const authToken = req.cookies.auth;
+    const adminToken = req.cookies.adminAuth;
+    
+    if (authToken) {
+      // Customer session
+      try {
+        const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
+        email = decoded.email;
+        
+        // Look up Stripe customer by email
+        const customers = await stripe.customers.list({ email, limit: 1 });
+        customer = customers.data[0];
 
-    try {
-      const decoded = jwt.verify(token, process.env.JWT_SECRET);
-      email = decoded.email;
-      
-      // Look up Stripe customer by email
-      const customers = await stripe.customers.list({ email, limit: 1 });
-      customer = customers.data[0];
-
-      if (!customer) {
-        return res.status(404).json({ error: 'Customer not found' });
+        if (!customer) {
+          return res.status(404).json({ error: 'Customer not found' });
+        }
+      } catch (error) {
+        return res.status(401).json({ error: 'Invalid authentication token' });
       }
-    } catch (error) {
-      return res.status(401).json({ error: 'Invalid authentication token' });
+    } else if (adminToken) {
+      // Admin session - check for customer ID parameter
+      try {
+        const decoded = jwt.verify(adminToken, process.env.JWT_SECRET);
+        if (decoded.role !== 'admin') {
+          return res.status(401).json({ error: 'Invalid admin session' });
+        }
+        
+        isAdminAccess = true;
+        const customerId = req.query.customerId;
+        
+        if (!customerId || !customerId.startsWith('cus_')) {
+          return res.status(400).json({ error: 'Customer ID required for admin access' });
+        }
+        
+        // Get customer directly by ID
+        customer = await stripe.customers.retrieve(customerId);
+        email = customer.email || `Admin Download (${customerId})`;
+        
+        // Log admin access
+        console.log(`📁 Admin downloading invoices for customer: ${customer.email} (${customerId}) at ${new Date().toISOString()}`);
+        
+      } catch (error) {
+        if (error.type === 'StripeInvalidRequestError') {
+          return res.status(404).json({ error: 'Customer not found' });
+        }
+        return res.status(401).json({ error: 'Invalid admin authentication token' });
+      }
+    } else {
+      return res.status(401).json({ error: 'Authentication required' });
     }
 
     // Get all invoices for this customer
