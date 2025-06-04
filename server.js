@@ -335,7 +335,7 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
       stripe.subscriptions.list({
         customer: customer.id,
         status: 'all',
-        expand: ['data.items.data.price.product']
+        expand: ['data.items.data.price']
       }),
       
       // Get payment methods
@@ -683,7 +683,7 @@ app.get('/admin/view-customer/:customerId', authenticateAdmin, async (req, res) 
       stripe.subscriptions.list({
         customer: customerId,
         status: 'all',
-        expand: ['data.items.data.price.product']
+        expand: ['data.items.data.price']
       }),
       
       stripe.paymentMethods.list({
@@ -710,6 +710,8 @@ app.get('/admin/view-customer/:customerId', authenticateAdmin, async (req, res) 
 
     // Filter out $0 invoices (trials, credits, etc.) to avoid user confusion
     const invoices = allInvoices.filter(invoice => invoice.total > 0);
+
+
 
     // Log the admin access for security audit
     console.log(`👁️ Admin viewing customer dashboard: ${customer.email} (${customerId}) at ${new Date().toISOString()}`);

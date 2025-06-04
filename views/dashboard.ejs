@@ -136,17 +136,7 @@
                         <% } %>
 
                         <!-- Upcoming Invoice or Subscription Status -->
-                        <%
-                        // Find the most relevant subscription to show status for
-                        let relevantSubscription = null;
-                        if (subscriptions && subscriptions.length > 0) {
-                            // Priority order: cancelled/cancelling > active > any other
-                            relevantSubscription = subscriptions.find(sub => 
-                                sub.status === 'canceled' || 
-                                sub.cancel_at_period_end === true
-                            ) || subscriptions.find(sub => sub.status === 'active') || subscriptions[0];
-                        }
-                        %>
+
                         
                         <% if (upcomingInvoice) { %>
                             <%
@@ -229,102 +219,68 @@
                                     </div>
                                 </div>
                             </div>
-                        <% } else if (relevantSubscription) { %>
-                            <%
-                            // Handle subscription status display when no upcoming invoice
-                            const isAlreadyCancelled = relevantSubscription.status === 'canceled';
-                            const willCancelAtPeriodEnd = relevantSubscription.cancel_at_period_end === true;
-                            const isActive = relevantSubscription.status === 'active';
-                            const periodEnd = new Date(relevantSubscription.current_period_end * 1000);
-                            const today = new Date();
-                            const daysUntilEnd = Math.ceil((periodEnd - today) / (1000 * 60 * 60 * 24));
+                        <% } %>
+                        
+                        <!-- Subscription Status (when no upcoming invoice but subscriptions exist) -->
+                        <% if (subscriptions && subscriptions.length > 0 && !upcomingInvoice) { %>
+                            <% 
+                            let statusSubscription = subscriptions[0];
+                            let isAlreadyCancelled = statusSubscription.status === 'canceled';
+                            let willCancelAtPeriodEnd = statusSubscription.cancel_at_period_end === true;
+                            let isActive = statusSubscription.status === 'active';
+                            let periodEnd = new Date(statusSubscription.current_period_end * 1000);
+                            let today = new Date();
+                            let daysUntilEnd = Math.ceil((periodEnd - today) / (1000 * 60 * 60 * 24));
                             
                             let badgeClass = '';
                             let badgeText = '';
                             let iconClass = '';
                             let iconColor = '';
                             let headerText = '';
-                            let subText = '';
-                            let amountText = '$0.00';
                             let dateText = '';
-                            let explanationText = '';
                             
                             if (isAlreadyCancelled) {
                                 badgeClass = 'bg-red-100 text-red-700';
                                 badgeText = 'Cancelled';
-                                iconClass = 'bg-red-50';
+                                iconClass = 'bi-x-circle';
                                 iconColor = 'text-red-600';
                                 headerText = 'Subscription Cancelled';
-                                subText = 'No further billing';
-                                dateText = relevantSubscription.canceled_at ? 
-                                    `Cancelled ${new Date(relevantSubscription.canceled_at * 1000).toLocaleDateString('en-US', { 
+                                dateText = statusSubscription.canceled_at ? 
+                                    `Cancelled ${new Date(statusSubscription.canceled_at * 1000).toLocaleDateString('en-US', { 
                                         month: 'long', 
                                         day: 'numeric',
                                         year: 'numeric'
                                     })}` : 'Cancelled recently';
-                                explanationText = 'Your subscription has been cancelled and no further charges will be made.';
-                            } else if (willCancelAtPeriodEnd) {
-                                if (daysUntilEnd <= 7) {
-                                    badgeClass = 'bg-orange-100 text-orange-700';
-                                    badgeText = 'Ending Soon';
-                                } else {
-                                    badgeClass = 'bg-yellow-100 text-yellow-700';
-                                    badgeText = 'Set to Cancel';
-                                }
-                                iconClass = 'bg-orange-50';
+                            } else if (willCancelAtPeriodEnd && isActive) {
+                                badgeClass = 'bg-orange-100 text-orange-700';
+                                badgeText = 'Ending Soon';
+                                iconClass = 'bi-calendar-x';
                                 iconColor = 'text-orange-600';
-                                headerText = 'Subscription Status';
-                                if (daysUntilEnd === 1) {
-                                    subText = 'Ends tomorrow';
-                                } else if (daysUntilEnd === 0) {
-                                    subText = 'Ends today';
-                                } else if (daysUntilEnd < 0) {
-                                    subText = 'Service ended';
-                                } else {
-                                    subText = `Ends in ${daysUntilEnd} day${daysUntilEnd !== 1 ? 's' : ''}`;
-                                }
-                                dateText = `Service ends ${periodEnd.toLocaleDateString('en-US', { 
+                                headerText = 'Subscription Ending';
+                                dateText = `Ends ${periodEnd.toLocaleDateString('en-US', { 
                                     month: 'long', 
                                     day: 'numeric',
                                     year: 'numeric'
-                                })}`;
-                                explanationText = `Your subscription is set to cancel at the end of the current billing period. You'll continue to have access until ${periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`;
-                            } else if (isActive) {
-                                // Active subscription but no upcoming invoice - might be paused, trial ended, etc.
+                                })} (${daysUntilEnd} day${daysUntilEnd !== 1 ? 's' : ''})`;
+                            } else {
                                 badgeClass = 'bg-blue-100 text-blue-700';
-                                badgeText = 'Active';
-                                iconClass = 'bg-blue-50';
+                                badgeText = statusSubscription.status.charAt(0).toUpperCase() + statusSubscription.status.slice(1).replace('_', ' ');
+                                iconClass = 'bi-info-circle';
                                 iconColor = 'text-blue-600';
                                 headerText = 'Subscription Status';
-                                subText = 'No pending charges';
-                                dateText = `Current period ends ${periodEnd.toLocaleDateString('en-US', { 
-                                    month: 'long', 
-                                    day: 'numeric',
-                                    year: 'numeric'
-                                })}`;
-                                explanationText = 'Your subscription is active but no upcoming payments are scheduled at this time.';
-                            } else {
-                                // Other status (past_due, incomplete, etc.)
-                                badgeClass = 'bg-yellow-100 text-yellow-700';
-                                badgeText = relevantSubscription.status.charAt(0).toUpperCase() + relevantSubscription.status.slice(1).replace('_', ' ');
-                                iconClass = 'bg-yellow-50';
-                                iconColor = 'text-yellow-600';
-                                headerText = 'Subscription Status';
-                                subText = 'Attention needed';
-                                dateText = `Status: ${relevantSubscription.status}`;
-                                explanationText = 'Your subscription needs attention. Please contact support if you have questions.';
+                                dateText = `Status: ${statusSubscription.status}`;
                             }
                             %>
                             <div class="col-md-6 col-lg-4">
                                 <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
                                     <div class="d-flex align-items-start justify-content-between mb-3">
                                         <div class="d-flex align-items-center">
-                                            <div class="<%= iconClass %> rounded-circle p-2 me-3">
-                                                <i class="bi bi-calendar-x <%= iconColor %>"></i>
+                                            <div class="bg-orange-50 rounded-circle p-2 me-3">
+                                                <i class="bi <%= iconClass %> <%= iconColor %>"></i>
                                             </div>
                                             <div>
                                                 <h6 class="fw-bold text-slate-900 mb-0"><%= headerText %></h6>
-                                                <small class="text-slate-500"><%= subText %></small>
+                                                <small class="text-slate-500">No upcoming payments</small>
                                             </div>
                                         </div>
                                         <span class="badge <%= badgeClass %> rounded-pill"><%= badgeText %></span>
@@ -332,37 +288,42 @@
                                     
                                     <div class="border-top pt-3">
                                         <div class="mb-3">
-                                            <h5 class="fw-bold text-slate-900 mb-1">
-                                                <%= amountText %>
-                                            </h5>
+                                            <h5 class="fw-bold text-slate-900 mb-1">$0.00</h5>
                                             <div class="text-slate-600">
                                                 <%= dateText %>
                                             </div>
                                         </div>
 
-                                        <div class="bg-slate-50 rounded-2 p-3">
-                                            <div class="small text-slate-600">
-                                                <strong class="text-slate-700 d-block mb-1">
-                                                    <%= isAlreadyCancelled ? 'No upcoming payments' : 
-                                                        willCancelAtPeriodEnd ? 'No upcoming payments' :
-                                                        isActive ? 'Active subscription' : 'Status update' %>
-                                                </strong>
-                                                <%= explanationText %>
-                                            </div>
-                                            
-                                            <% if (customerPortalUrl && !isAlreadyCancelled) { %>
-                                                <div class="border-top border-slate-200 pt-3 mt-3">
-                                                    <a href="<%= customerPortalUrl %>" class="btn btn-outline-primary btn-sm w-100">
-                                                        <i class="bi <%= willCancelAtPeriodEnd ? 'bi-arrow-clockwise' : 'bi-gear' %> me-2"></i>
-                                                        <%= willCancelAtPeriodEnd ? 'Reactivate Subscription' : 'Manage Subscription' %>
-                                                    </a>
+                                        <% if (willCancelAtPeriodEnd && isActive) { %>
+                                            <div class="bg-orange-50 rounded-2 p-3">
+                                                <div class="d-flex align-items-start">
+                                                    <i class="bi bi-info-circle text-orange-600 me-2 mt-1"></i>
+                                                    <div class="small text-orange-700">
+                                                        <strong>Your subscription will end on <%= periodEnd.toLocaleDateString('en-US', { 
+                                                            month: 'long', 
+                                                            day: 'numeric',
+                                                            year: 'numeric'
+                                                        }) %>.</strong><br>
+                                                        You'll retain access until then, but won't be charged again.
+                                                    </div>
                                                 </div>
-                                            <% } %>
-                                        </div>
+                                            </div>
+                                        <% } else if (isAlreadyCancelled) { %>
+                                            <div class="bg-red-50 rounded-2 p-3">
+                                                <div class="d-flex align-items-start">
+                                                    <i class="bi bi-x-circle text-red-600 me-2 mt-1"></i>
+                                                    <div class="small text-red-700">
+                                                        <strong>This subscription has been cancelled.</strong><br>
+                                                        No further charges will be made.
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <% } %>
                                     </div>
                                 </div>
                             </div>
                         <% } %>
+
 
                         <!-- Payment Methods -->
                         <% if (paymentMethods && paymentMethods.length > 0) { %>
@@ -436,73 +397,7 @@
                             </div>
                         <% } %>
 
-                        <!-- Account Summary -->
-                        <div class="col-md-12 col-lg-4">
-                            <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
-                                <div class="d-flex align-items-center mb-3">
-                                    <div class="bg-purple-50 rounded-circle p-2 me-3">
-                                        <i class="bi bi-graph-up text-purple-600"></i>
-                                    </div>
-                                    <div>
-                                        <h6 class="fw-bold text-slate-900 mb-0">Account Summary</h6>
-                                        <small class="text-slate-500">Your account overview</small>
-                                    </div>
-                                </div>
-                                
-                                <div class="border-top pt-3">
-                                    <div class="row g-2 small text-slate-600">
-                                        <div class="col-6 col-md-3 col-lg-6">
-                                            <strong class="text-slate-700">Customer Since:</strong><br>
-                                            <%= new Date(customer.created * 1000).toLocaleDateString('en-US', { 
-                                                year: 'numeric', 
-                                                month: 'long', 
-                                                day: 'numeric' 
-                                            }) %>
-                                        </div>
-                                        <% 
-                                        const outstandingBalance = invoices.reduce((sum, invoice) => {
-                                            if (invoice.status === 'open' || invoice.status === 'past_due') {
-                                                return sum + invoice.amount_due;
-                                            }
-                                            return sum;
-                                        }, 0);
-                                        const lastPayment = invoices.find(invoice => invoice.status === 'paid');
-                                        %>
-                                        <div class="col-6 col-md-3 col-lg-6 mt-2">
-                                            <strong class="text-slate-700">Outstanding Balance:</strong><br>
-                                            <span class="<%= outstandingBalance > 0 ? 'text-yellow-600' : 'text-green-600' %>">
-                                                <%= (outstandingBalance / 100).toLocaleString('en-US', { 
-                                                    style: 'currency', 
-                                                    currency: invoices.length > 0 ? invoices[0].currency.toUpperCase() : 'USD' 
-                                                }) %>
-                                            </span>
-                                        </div>
-                                        <div class="col-6 col-md-3 col-lg-6 mt-2">
-                                            <strong class="text-slate-700">Invoices:</strong><br>
-                                            <%= invoices.length %> total
-                                            <% if (invoices.length > 1) { %>
-                                                <i class="bi bi-download text-slate-500 ms-1" 
-                                                   onclick="downloadAllInvoices()" 
-                                                   title="Download all invoices as ZIP"
-                                                   style="cursor: pointer; font-size: inherit;"
-                                                   onmouseover="this.style.color='#C18D85'" 
-                                                   onmouseout="this.style.color='#64748b'"></i>
-                                            <% } %>
-                                        </div>
-                                        <% if (lastPayment) { %>
-                                            <div class="col-6 col-md-3 col-lg-6 mt-2">
-                                                <strong class="text-slate-700">Last Payment:</strong><br>
-                                                <%= new Date(lastPayment.status_transitions.paid_at * 1000).toLocaleDateString('en-US', { 
-                                                    month: 'short', 
-                                                    day: 'numeric',
-                                                    year: 'numeric'
-                                                }) %>
-                                            </div>
-                                        <% } %>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+
                     </div>
                 </div>
             </div>
