@@ -181,35 +181,37 @@
                                         <span class="badge <%= badgeClass %> rounded-pill"><%= badgeText %></span>
                                     </div>
                                     
-                                    <div class="mb-3">
-                                        <h5 class="fw-bold text-slate-900 mb-1">
-                                            <%= (upcomingInvoice.amount_due / 100).toLocaleString('en-US', { 
-                                                style: 'currency', 
-                                                currency: upcomingInvoice.currency.toUpperCase() 
-                                            }) %>
-                                        </h5>
-                                        <div class="text-slate-600">
-                                            Due <%= new Date(upcomingInvoice.period_end * 1000).toLocaleDateString('en-US', { 
-                                                month: 'long', 
-                                                day: 'numeric',
-                                                year: 'numeric'
-                                            }) %>
-                                        </div>
-                                    </div>
-
-                                    <% if (upcomingInvoice.lines && upcomingInvoice.lines.data.length > 0) { %>
-                                        <div class="border-top pt-3">
-                                            <div class="small text-slate-600">
-                                                <strong class="text-slate-700">Items:</strong><br>
-                                                <% upcomingInvoice.lines.data.slice(0, 2).forEach(function(line) { %>
-                                                    <div class="text-slate-600"><%= line.description %></div>
-                                                <% }); %>
-                                                <% if (upcomingInvoice.lines.data.length > 2) { %>
-                                                    <div class="text-slate-500">+ <%= upcomingInvoice.lines.data.length - 2 %> more item<%= upcomingInvoice.lines.data.length - 2 !== 1 ? 's' : '' %></div>
-                                                <% } %>
+                                    <div class="border-top pt-3">
+                                        <div class="mb-3">
+                                            <h5 class="fw-bold text-slate-900 mb-1">
+                                                <%= (upcomingInvoice.amount_due / 100).toLocaleString('en-US', { 
+                                                    style: 'currency', 
+                                                    currency: upcomingInvoice.currency.toUpperCase() 
+                                                }) %>
+                                            </h5>
+                                            <div class="text-slate-600">
+                                                Due <%= new Date(upcomingInvoice.period_end * 1000).toLocaleDateString('en-US', { 
+                                                    month: 'long', 
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                }) %>
                                             </div>
                                         </div>
-                                    <% } %>
+
+                                        <% if (upcomingInvoice.lines && upcomingInvoice.lines.data.length > 0) { %>
+                                            <div>
+                                                <div class="small text-slate-600">
+                                                    <strong class="text-slate-700">Items:</strong><br>
+                                                    <% upcomingInvoice.lines.data.slice(0, 2).forEach(function(line) { %>
+                                                        <div class="text-slate-600"><%= line.description %></div>
+                                                    <% }); %>
+                                                    <% if (upcomingInvoice.lines.data.length > 2) { %>
+                                                        <div class="text-slate-500">+ <%= upcomingInvoice.lines.data.length - 2 %> more item<%= upcomingInvoice.lines.data.length - 2 !== 1 ? 's' : '' %></div>
+                                                    <% } %>
+                                                </div>
+                                            </div>
+                                        <% } %>
+                                    </div>
                                 </div>
                             </div>
                         <% } %>
@@ -228,7 +230,8 @@
                                         </div>
                                     </div>
                                     
-                                    <div class="space-y-3">
+                                    <div class="border-top pt-3">
+                                        <div class="space-y-3">
                                         <% paymentMethods.slice(0, 2).forEach(function(pm, index) { %>
                                             <div class="<%= index !== 0 ? 'mt-3 pt-3 border-top border-slate-100' : '' %>">
                                                 <div class="d-flex align-items-start">
@@ -270,16 +273,17 @@
                                                 <small class="text-slate-500">+ <%= paymentMethods.length - 2 %> more card<%= paymentMethods.length - 2 !== 1 ? 's' : '' %></small>
                                             </div>
                                         <% } %>
-                                    </div>
-
-                                    <% if (customerPortalUrl) { %>
-                                        <div class="border-top pt-3 mt-3">
-                                            <a href="<%= customerPortalUrl %>" class="btn btn-outline-primary btn-sm w-100">
-                                                <i class="bi bi-pencil-square me-2"></i>
-                                                Manage Payment Methods
-                                            </a>
                                         </div>
-                                    <% } %>
+
+                                        <% if (customerPortalUrl) { %>
+                                            <div class="border-top pt-3 mt-3">
+                                                <a href="<%= customerPortalUrl %>" class="btn btn-outline-primary btn-sm w-100">
+                                                    <i class="bi bi-pencil-square me-2"></i>
+                                                    Manage Payment Methods
+                                                </a>
+                                            </div>
+                                        <% } %>
+                                    </div>
                                 </div>
                             </div>
                         <% } %>
