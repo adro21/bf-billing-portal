@@ -671,8 +671,18 @@
             }, 500);
             
             try {
+                // Build download URL - check if we're in admin test mode
+                let downloadUrl = '/download-all-invoices';
+                const urlParams = new URLSearchParams(window.location.search);
+                const isAdminTest = urlParams.has('secret') && urlParams.has('customerId');
+                
+                if (isAdminTest) {
+                    // Pass admin test credentials to download route
+                    downloadUrl += `?secret=${urlParams.get('secret')}&customerId=${urlParams.get('customerId')}`;
+                }
+                
                 // Trigger download
-                const response = await fetch('/download-all-invoices', {
+                const response = await fetch(downloadUrl, {
                     method: 'GET',
                     credentials: 'same-origin'
                 });

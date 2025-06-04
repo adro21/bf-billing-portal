@@ -472,16 +472,46 @@ app.get('/admin-test', async (req, res) => {
 });
 
 // Download all invoices as ZIP
-app.get('/download-all-invoices', authenticateToken, async (req, res) => {
+app.get('/download-all-invoices', async (req, res) => {
   try {
-    const { email } = req.user;
+    let customer = null;
+    let email = null;
 
-    // Look up Stripe customer
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    const customer = customers.data[0];
+    // Check if this is an admin test request
+    const providedSecret = req.query.secret || req.headers['x-admin-secret'];
+    const expectedSecret = process.env.ADMIN_TEST_SECRET;
+    const customerId = req.query.customerId;
+    
+    if (providedSecret && expectedSecret && providedSecret === expectedSecret && customerId) {
+      // Admin test authentication - get customer directly by ID
+      console.log(`🔧 ADMIN DOWNLOAD: Fetching invoices for customer ${customerId}`);
+      try {
+        customer = await stripe.customers.retrieve(customerId);
+        email = customer.email || `Admin Test (${customerId})`;
+      } catch (error) {
+        return res.status(404).json({ error: 'Customer not found in admin test mode' });
+      }
+    } else {
+      // Normal JWT authentication
+      const token = req.cookies.auth;
+      if (!token) {
+        return res.status(401).json({ error: 'Authentication required' });
+      }
 
-    if (!customer) {
-      return res.status(404).json({ error: 'Customer not found' });
+      try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        email = decoded.email;
+        
+        // Look up Stripe customer by email
+        const customers = await stripe.customers.list({ email, limit: 1 });
+        customer = customers.data[0];
+
+        if (!customer) {
+          return res.status(404).json({ error: 'Customer not found' });
+        }
+      } catch (error) {
+        return res.status(401).json({ error: 'Invalid authentication token' });
+      }
     }
 
     // Get all invoices for this customer
