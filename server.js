@@ -114,8 +114,9 @@ app.post('/send-magic-link', magicLinkLimiter, async (req, res) => {
       { expiresIn: '15m' }
     );
 
-    // Create magic link
-    const magicLink = `${process.env.BASE_URL}/verify?token=${token}`;
+    // Create magic link (normalize BASE_URL to remove trailing slash)
+    const baseUrl = process.env.BASE_URL.replace(/\/$/, '');
+    const magicLink = `${baseUrl}/verify?token=${token}`;
 
     // Email content
     const msg = {
@@ -132,7 +133,7 @@ app.post('/send-magic-link', magicLinkLimiter, async (req, res) => {
                 <!-- Header with Logo -->
                 <tr>
                   <td align="center" style="padding: 40px 40px 20px 40px;">
-                    <img src="${process.env.BASE_URL}/images/logo.png" alt="Bounce Forward Co." width="120" height="auto" style="display: block; max-width: 120px; height: auto;">
+                    <img src="${process.env.BASE_URL}/images/logo.png" alt="Bounce Forward Co." width="150" height="auto" style="display: block; max-width: 150px; height: auto;">
                   </td>
                 </tr>
                 
@@ -298,7 +299,7 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
       // Create customer portal session
       stripe.billingPortal.sessions.create({
         customer: customer.id,
-        return_url: `${process.env.BASE_URL}/dashboard`
+        return_url: `${process.env.BASE_URL.replace(/\/$/, '')}/dashboard`
       })
     ]);
 
@@ -422,7 +423,7 @@ app.get('/admin-test', async (req, res) => {
       
       stripe.billingPortal.sessions.create({
         customer: customerId,
-        return_url: `${process.env.BASE_URL}/admin-test?secret=${providedSecret}&customerId=${customerId}`
+        return_url: `${process.env.BASE_URL.replace(/\/$/, '')}/admin-test?secret=${providedSecret}&customerId=${customerId}`
       })
     ]);
 
