@@ -137,13 +137,14 @@
 
                         <!-- Upcoming Invoice or Subscription Status -->
                         <%
-                        // Check if we have a cancelled or cancelling subscription
-                        let cancelledSubscription = null;
+                        // Find the most relevant subscription to show status for
+                        let relevantSubscription = null;
                         if (subscriptions && subscriptions.length > 0) {
-                            cancelledSubscription = subscriptions.find(sub => 
+                            // Priority order: cancelled/cancelling > active > any other
+                            relevantSubscription = subscriptions.find(sub => 
                                 sub.status === 'canceled' || 
                                 sub.cancel_at_period_end === true
-                            );
+                            ) || subscriptions.find(sub => sub.status === 'active') || subscriptions[0];
                         }
                         %>
                         
@@ -228,12 +229,13 @@
                                     </div>
                                 </div>
                             </div>
-                        <% } else if (cancelledSubscription) { %>
+                        <% } else if (relevantSubscription) { %>
                             <%
-                            // Handle cancelled or cancelling subscription display
-                            const isAlreadyCancelled = cancelledSubscription.status === 'canceled';
-                            const willCancelAtPeriodEnd = cancelledSubscription.cancel_at_period_end === true;
-                            const periodEnd = new Date(cancelledSubscription.current_period_end * 1000);
+                            // Handle subscription status display when no upcoming invoice
+                            const isAlreadyCancelled = relevantSubscription.status === 'canceled';
+                            const willCancelAtPeriodEnd = relevantSubscription.cancel_at_period_end === true;
+                            const isActive = relevantSubscription.status === 'active';
+                            const periodEnd = new Date(relevantSubscription.current_period_end * 1000);
                             const today = new Date();
                             const daysUntilEnd = Math.ceil((periodEnd - today) / (1000 * 60 * 60 * 24));
                             
@@ -243,6 +245,9 @@
                             let iconColor = '';
                             let headerText = '';
                             let subText = '';
+                            let amountText = '$0.00';
+                            let dateText = '';
+                            let explanationText = '';
                             
                             if (isAlreadyCancelled) {
                                 badgeClass = 'bg-red-100 text-red-700';
@@ -251,6 +256,13 @@
                                 iconColor = 'text-red-600';
                                 headerText = 'Subscription Cancelled';
                                 subText = 'No further billing';
+                                dateText = relevantSubscription.canceled_at ? 
+                                    `Cancelled ${new Date(relevantSubscription.canceled_at * 1000).toLocaleDateString('en-US', { 
+                                        month: 'long', 
+                                        day: 'numeric',
+                                        year: 'numeric'
+                                    })}` : 'Cancelled recently';
+                                explanationText = 'Your subscription has been cancelled and no further charges will be made.';
                             } else if (willCancelAtPeriodEnd) {
                                 if (daysUntilEnd <= 7) {
                                     badgeClass = 'bg-orange-100 text-orange-700';
@@ -271,6 +283,36 @@
                                 } else {
                                     subText = `Ends in ${daysUntilEnd} day${daysUntilEnd !== 1 ? 's' : ''}`;
                                 }
+                                dateText = `Service ends ${periodEnd.toLocaleDateString('en-US', { 
+                                    month: 'long', 
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                })}`;
+                                explanationText = `Your subscription is set to cancel at the end of the current billing period. You'll continue to have access until ${periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}.`;
+                            } else if (isActive) {
+                                // Active subscription but no upcoming invoice - might be paused, trial ended, etc.
+                                badgeClass = 'bg-blue-100 text-blue-700';
+                                badgeText = 'Active';
+                                iconClass = 'bg-blue-50';
+                                iconColor = 'text-blue-600';
+                                headerText = 'Subscription Status';
+                                subText = 'No pending charges';
+                                dateText = `Current period ends ${periodEnd.toLocaleDateString('en-US', { 
+                                    month: 'long', 
+                                    day: 'numeric',
+                                    year: 'numeric'
+                                })}`;
+                                explanationText = 'Your subscription is active but no upcoming payments are scheduled at this time.';
+                            } else {
+                                // Other status (past_due, incomplete, etc.)
+                                badgeClass = 'bg-yellow-100 text-yellow-700';
+                                badgeText = relevantSubscription.status.charAt(0).toUpperCase() + relevantSubscription.status.slice(1).replace('_', ' ');
+                                iconClass = 'bg-yellow-50';
+                                iconColor = 'text-yellow-600';
+                                headerText = 'Subscription Status';
+                                subText = 'Attention needed';
+                                dateText = `Status: ${relevantSubscription.status}`;
+                                explanationText = 'Your subscription needs attention. Please contact support if you have questions.';
                             }
                             %>
                             <div class="col-md-6 col-lg-4">
@@ -291,42 +333,28 @@
                                     <div class="border-top pt-3">
                                         <div class="mb-3">
                                             <h5 class="fw-bold text-slate-900 mb-1">
-                                                $0.00
+                                                <%= amountText %>
                                             </h5>
                                             <div class="text-slate-600">
-                                                <% if (isAlreadyCancelled) { %>
-                                                    Cancelled <%= cancelledSubscription.canceled_at ? 
-                                                        new Date(cancelledSubscription.canceled_at * 1000).toLocaleDateString('en-US', { 
-                                                            month: 'long', 
-                                                            day: 'numeric',
-                                                            year: 'numeric'
-                                                        }) : 'recently' %>
-                                                <% } else { %>
-                                                    Service ends <%= periodEnd.toLocaleDateString('en-US', { 
-                                                        month: 'long', 
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    }) %>
-                                                <% } %>
+                                                <%= dateText %>
                                             </div>
                                         </div>
 
                                         <div class="bg-slate-50 rounded-2 p-3">
                                             <div class="small text-slate-600">
-                                                <% if (isAlreadyCancelled) { %>
-                                                    <strong class="text-slate-700 d-block mb-1">No upcoming payments</strong>
-                                                    Your subscription has been cancelled and no further charges will be made.
-                                                <% } else if (willCancelAtPeriodEnd) { %>
-                                                    <strong class="text-slate-700 d-block mb-1">No upcoming payments</strong>
-                                                    Your subscription is set to cancel at the end of the current billing period. You'll continue to have access until <%= periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) %>.
-                                                <% } %>
+                                                <strong class="text-slate-700 d-block mb-1">
+                                                    <%= isAlreadyCancelled ? 'No upcoming payments' : 
+                                                        willCancelAtPeriodEnd ? 'No upcoming payments' :
+                                                        isActive ? 'Active subscription' : 'Status update' %>
+                                                </strong>
+                                                <%= explanationText %>
                                             </div>
                                             
                                             <% if (customerPortalUrl && !isAlreadyCancelled) { %>
                                                 <div class="border-top border-slate-200 pt-3 mt-3">
                                                     <a href="<%= customerPortalUrl %>" class="btn btn-outline-primary btn-sm w-100">
-                                                        <i class="bi bi-arrow-clockwise me-2"></i>
-                                                        Reactivate Subscription
+                                                        <i class="bi <%= willCancelAtPeriodEnd ? 'bi-arrow-clockwise' : 'bi-gear' %> me-2"></i>
+                                                        <%= willCancelAtPeriodEnd ? 'Reactivate Subscription' : 'Manage Subscription' %>
                                                     </a>
                                                 </div>
                                             <% } %>
