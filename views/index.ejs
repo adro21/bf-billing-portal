@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body class="bg-slate-50">
+<body class="bg-light-pink">
     <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
         <div class="row w-100 justify-content-center">
             <div class="col-md-6 col-lg-4">
@@ -16,9 +16,9 @@
                     <div class="card-body p-5">
                         <div class="text-center mb-5">
                             <div class="mb-3">
-                                <i class="bi bi-receipt-cutoff text-slate-400" style="font-size: 2.5rem;"></i>
+                                <img src="/images/logo.png" alt="Bounce Forward Co. Logo" class="img-fluid" style="max-width: 200px;">
                             </div>
-                            <h1 class="h4 fw-bold text-slate-900 mb-2">Access Your Billing History</h1>
+                            <h1 class="h4 fw-bold text-slate-900 mb-2">Billing History Portal</h1>
                             <p class="text-slate-500 mb-0">Enter your email address to receive a secure login link</p>
                         </div>
 
@@ -40,7 +40,7 @@
 
                         <form action="/send-magic-link" method="POST">
                             <div class="mb-4">
-                                <label for="email" class="form-label text-slate-700 fw-medium mb-2">Email Address</label>
+                                <label for="email" class="form-label text-slate-700 fw-medium mb-2">Bounce Forward Account Email</label>
                                 <input 
                                     type="email" 
                                     id="email" 
@@ -56,19 +56,13 @@
                             </button>
                         </form>
 
-                        <div class="bg-slate-100 rounded-3 p-4">
-                            <div class="d-flex align-items-start">
-                                <div class="bg-green-50 rounded-circle p-2 me-3 flex-shrink-0">
-                                    <i class="bi bi-shield-check text-green-600"></i>
-                                </div>
-                                <div>
-                                    <h6 class="fw-semibold text-slate-800 mb-2">Secure Access</h6>
-                                    <ul class="small text-slate-600 mb-0 ps-3">
-                                        <li>No passwords required</li>
-                                        <li>Links expire in 15 minutes</li>
-                                        <li>Only you can access your billing data</li>
-                                    </ul>
-                                </div>
+                        <div class="text-center border-top pt-4 mt-4">
+                            <div class="d-flex align-items-center justify-content-center mb-3">
+                                <i class="bi bi-shield-check text-green-600 me-2" style="font-size: 1rem;"></i>
+                                <span class="fw-medium text-slate-600" style="font-size: 0.9rem;">Secure Access</span>
+                            </div>
+                            <div class="text-slate-500" style="font-size: 0.85rem; line-height: 1.4;">
+                                No passwords • 15-min expiry • Secure & private
                             </div>
                         </div>
                     </div>
@@ -78,9 +72,9 @@
     </div>
 
     <!-- Footer -->
-    <footer class="position-fixed bottom-0 w-100 bg-white border-top py-3">
+    <footer class="position-fixed bottom-0 w-100 bg-dark-pink py-3">
         <div class="container text-center">
-            <small class="text-slate-500">&copy; 2024 MySaaS. Secure billing portal powered by Stripe.</small>
+            <small class="text-white">&copy; <%= new Date().getFullYear() %> Bounce Forward Co. Secure billing portal powered by Stripe.</small>
         </div>
     </footer>
 

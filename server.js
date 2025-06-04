@@ -124,19 +124,87 @@ app.post('/send-magic-link', magicLinkLimiter, async (req, res) => {
       subject: 'Your Billing Portal Login Link',
       text: `Click the following link to access your billing history: ${magicLink}\n\nThis link will expire in 15 minutes.`,
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2>Access Your Billing History</h2>
-          <p>Click the button below to securely access your billing portal:</p>
-          <div style="text-align: center; margin: 30px 0;">
-            <a href="${magicLink}" 
-               style="background-color: #007bff; color: white; padding: 12px 24px; text-decoration: none; border-radius: 5px; display: inline-block;">
-              Access Billing Portal
-            </a>
-          </div>
-          <p><strong>This link will expire in 15 minutes.</strong></p>
-          <p>If the button doesn't work, copy and paste this link into your browser:</p>
-          <p style="word-break: break-all; color: #666;">${magicLink}</p>
-        </div>
+        <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #E9E2E0; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
+          <tr>
+            <td align="center">
+              <table width="600" cellpadding="0" cellspacing="0" border="0" style="background-color: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 16px rgba(0,0,0,0.1);">
+                
+                <!-- Header with Logo -->
+                <tr>
+                  <td align="center" style="padding: 40px 40px 20px 40px;">
+                    <img src="${process.env.BASE_URL}/images/logo.png" alt="Bounce Forward Co." width="120" height="auto" style="display: block; max-width: 120px; height: auto;">
+                  </td>
+                </tr>
+                
+                <!-- Main Content -->
+                <tr>
+                  <td style="padding: 0 40px 40px 40px;">
+                    <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                      
+                      <!-- Title -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 24px;">
+                          <h1 style="margin: 0; color: #0f172a; font-size: 28px; font-weight: 700; line-height: 1.2;">Access Your Billing History</h1>
+                        </td>
+                      </tr>
+                      
+                      <!-- Description -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 32px;">
+                          <p style="margin: 0; color: #64748b; font-size: 16px; line-height: 1.5;">Click the button below to securely access your billing portal and view your account details.</p>
+                        </td>
+                      </tr>
+                      
+                      <!-- CTA Button -->
+                      <tr>
+                        <td align="center" style="padding-bottom: 32px;">
+                          <table cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td style="border-radius: 8px; background-color: #C18D85;">
+                                <a href="${magicLink}" style="display: inline-block; padding: 16px 32px; background-color: #C18D85; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 16px; border-radius: 8px; border: none;">Access Billing Portal</a>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      
+                      <!-- Security Notice -->
+                      <tr>
+                        <td style="padding: 24px; background-color: #f8fafc; border-radius: 8px; border-left: 4px solid #C18D85;">
+                          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                            <tr>
+                              <td>
+                                <p style="margin: 0 0 8px 0; color: #334155; font-weight: 600; font-size: 14px;">🔒 Security Notice</p>
+                                <p style="margin: 0; color: #64748b; font-size: 14px; line-height: 1.4;">This secure link will expire in <strong>15 minutes</strong> for your protection. Only you can access your billing data with this link.</p>
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                      </tr>
+                      
+                      <!-- Fallback Link -->
+                      <tr>
+                        <td style="padding-top: 32px; border-top: 1px solid #e2e8f0; margin-top: 32px;">
+                          <p style="margin: 0 0 12px 0; color: #64748b; font-size: 14px;">If the button doesn't work, copy and paste this link into your browser:</p>
+                          <p style="margin: 0; word-break: break-all; color: #94a3b8; font-size: 12px; background-color: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0;">${magicLink}</p>
+                        </td>
+                      </tr>
+                      
+                    </table>
+                  </td>
+                </tr>
+                
+                <!-- Footer -->
+                <tr>
+                  <td style="background-color: #C18D85; padding: 24px 40px; text-align: center;">
+                    <p style="margin: 0; color: #ffffff; font-size: 14px;">© ${new Date().getFullYear()} Bounce Forward Co. Secure billing portal powered by Stripe.</p>
+                  </td>
+                </tr>
+                
+              </table>
+            </td>
+          </tr>
+        </table>
       `
     };
 
@@ -185,7 +253,7 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
     if (!customer) {
       return res.render('dashboard', { 
         email, 
-        error: 'No billing history found for this email address',
+        error: 'We couldn\'t find any billing history for this email. Try using the one you signed up for Bounce Forward with.',
         invoices: [],
         subscriptions: [],
         paymentMethods: [],

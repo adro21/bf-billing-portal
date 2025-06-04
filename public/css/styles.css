@@ -77,27 +77,44 @@ body {
 }
 
 .btn-primary {
-    background-color: var(--color-blue-600);
+    background-color: var(--color-dark-pink);
     color: white;
     box-shadow: var(--shadow-sm);
+    border: none;
 }
 
 .btn-primary:hover {
-    background-color: var(--color-blue-700);
+    background-color: var(--color-dark-pink-hover);
     box-shadow: var(--shadow);
     transform: translateY(-1px);
+    color: white;
+}
+
+.btn-primary:active {
+    background-color: var(--color-dark-pink-hover) !important;
+    border-color: var(--color-dark-pink-hover) !important;
+    color: white !important;
+    box-shadow: none !important;
+    transform: translateY(0) !important;
 }
 
 .btn-outline-primary {
     background-color: white;
-    color: var(--color-blue-600);
-    border: 1px solid var(--color-blue-600);
+    color: var(--color-dark-pink);
+    border: 1px solid var(--color-dark-pink);
 }
 
 .btn-outline-primary:hover {
-    background-color: var(--color-blue-50);
-    color: var(--color-blue-700);
-    border-color: var(--color-blue-700);
+    background-color: var(--color-dark-pink);
+    color: white;
+    border-color: var(--color-dark-pink);
+}
+
+.btn-outline-primary:active {
+    background-color: var(--color-dark-pink-hover) !important;
+    border-color: var(--color-dark-pink-hover) !important;
+    color: white !important;
+    box-shadow: none !important;
 }
 
 .btn-secondary {
@@ -155,11 +172,14 @@ body {
     position: relative;
 }
 
-/* Prevent navbar height changes when dropdown opens */
+/* Desktop dropdown positioning */
 .navbar-nav .dropdown-menu {
     position: absolute !important;
-    will-change: transform;
-    transform: translate3d(0px, 100%, 0px) !important;
+    top: 100% !important;
+    right: 0 !important;
+    left: auto !important;
+    transform: none !important;
+    margin-top: 0.125rem !important;
 }
 
 .navbar-brand {
@@ -172,7 +192,7 @@ body {
 .navbar-brand img {
     height: 32px;
     width: auto;
-    max-height: 32px;
+    max-height: 40px;
     object-fit: contain;
 }
 
@@ -218,6 +238,17 @@ body {
     top: 100% !important;
     transform: none !important;
     margin-top: 0.5rem;
+}
+
+.dropdown-item:active,
+.dropdown-item.active {
+    background-color: var(--color-dark-pink) !important;
+    color: white !important;
+}
+
+.dropdown-item:hover {
+    background-color: var(--color-slate-50);
+    color: var(--color-slate-700);
 }
 
 /* Alerts - minimal and clean */
@@ -359,6 +390,42 @@ body {
 
 .bg-red-100 { background-color: #fee2e2 !important; }
 
+.bg-profile-circle { background-color: #C18D85 !important; }
+
+.bg-profile-circle i { color:#ffffff !important;}
+
+.bg-super-light-pink { background-color: #FCFBFB !important; }
+.bg-light-pink { background-color: #E9E2E0 !important; }
+.bg-dark-pink { background-color: #C18D85 !important; }
+.bg-burgundy { background-color: #6B2A28 !important; }
+
+/* Dark pink color variables for buttons */
+:root {
+    --color-dark-pink: #C18D85;
+    --color-dark-pink-hover: #B17D75;
+}
+
+/* Override Bootstrap's blue active states globally */
+.btn:active,
+.btn.active,
+.btn:focus {
+    box-shadow: none !important;
+}
+
+/* Override any remaining blue focus/active states */
+a:active,
+button:active,
+.nav-link:active,
+.navbar-nav .nav-link:active {
+    color: var(--color-dark-pink) !important;
+}
+
+/* Form control focus states */
+.form-control:active,
+.form-select:active {
+    border-color: var(--color-dark-pink) !important;
+}
+
 /* Border radius utilities */
 .rounded-4 {
     border-radius: 1rem !important;
@@ -443,14 +510,9 @@ footer {
 /* Mobile dropdown fixes */
 @media (max-width: 991.98px) {
     .navbar-nav .dropdown-menu {
-        position: absolute !important;
-        top: 100% !important;
-        left: auto !important;
-        right: 0 !important;
-        transform: none !important;
-        margin-top: 0.5rem !important;
         min-width: 200px;
         max-width: 280px;
+        /* Inherit desktop positioning - no changes needed for mobile */
     }
 }
 
@@ -561,7 +623,7 @@ footer {
         align-items: center;
         gap: 0.5rem;
         padding: 0.625rem 1.25rem;
-        background-color: var(--color-blue-600);
+        background-color: var(--color-dark-pink);
         color: white;
         text-decoration: none;
         border: none;
@@ -573,9 +635,15 @@ footer {
     }
     
     .mobile-view-btn:hover {
-        background-color: var(--color-blue-700);
+        background-color: var(--color-dark-pink-hover);
         color: white;
         transform: translateY(-1px);
+    }
+    
+    .mobile-view-btn:active {
+        background-color: var(--color-dark-pink-hover) !important;
+        color: white !important;
+        transform: translateY(0) !important;
     }
     
     .mobile-view-btn.disabled {
