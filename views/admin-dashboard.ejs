@@ -46,7 +46,7 @@
     <!-- Main Content -->
     <div class="container my-5 flex-grow-1">
         <!-- Header -->
-        <div class="mb-5">
+        <div class="mb-5 text-center">
             <h1 class="h3 fw-bold text-slate-900 mb-1">Customer Account Access</h1>
             <p class="text-slate-500 mb-0">Search for customers and view their billing dashboards</p>
         </div>
@@ -102,7 +102,7 @@
                             <!-- Customer Found -->
                             <div class="mt-5 pt-4 border-top">
                                 <div class="bg-green-50 rounded-3 p-4">
-                                    <div class="d-flex align-items-start justify-content-between mb-3">
+                                    <div class="d-flex align-items-center justify-content-between mb-3">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-green-500 rounded-circle p-2 me-3">
                                                 <i class="bi bi-person-check text-white"></i>
@@ -118,27 +118,27 @@
                                     <div class="row g-3 mb-4">
                                         <div class="col-md-6">
                                             <div class="d-flex flex-column">
-                                                <span class="text-green-700 fw-medium">Email</span>
+                                                <span class="text-green-700 fw-bold">Email</span>
                                                 <span class="text-green-800"><%= customer.email %></span>
                                             </div>
                                         </div>
                                         <div class="col-md-6">
                                             <div class="d-flex flex-column">
-                                                <span class="text-green-700 fw-medium">Customer ID</span>
+                                                <span class="text-green-700 fw-bold">Customer ID</span>
                                                 <span class="text-green-800 font-monospace small"><%= customer.id %></span>
                                             </div>
                                         </div>
                                         <% if (customer.name) { %>
                                             <div class="col-md-6">
                                                 <div class="d-flex flex-column">
-                                                    <span class="text-green-700 fw-medium">Name</span>
+                                                    <span class="text-green-700 fw-bold">Name</span>
                                                     <span class="text-green-800"><%= customer.name %></span>
                                                 </div>
                                             </div>
                                         <% } %>
                                         <div class="col-md-6">
                                             <div class="d-flex flex-column">
-                                                <span class="text-green-700 fw-medium">Created</span>
+                                                <span class="text-green-700 fw-bold">Created</span>
                                                 <span class="text-green-800">
                                                     <%= new Date(customer.created * 1000).toLocaleDateString('en-US', { 
                                                         year: 'numeric', 

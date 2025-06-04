@@ -462,6 +462,7 @@ button:active,
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    min-width: fit-content !important;
 }
 
 /* Specific sizing for different circle containers */
@@ -473,6 +474,11 @@ button:active,
 .rounded-circle.p-2 {
     width: 2.5rem !important;
     height: 2.5rem !important;
+}
+
+.rounded-circle.p-3 {
+    width: 3rem !important;
+    height: 3rem !important;
 }
 
 .status-indicator.paid {
