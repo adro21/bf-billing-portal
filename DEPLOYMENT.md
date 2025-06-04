@@ -16,15 +16,14 @@ SENDGRID_API_KEY=SG.YOUR_SENDGRID_API_KEY
 JWT_SECRET=your_secure_jwt_secret_64_chars_minimum
 SENDER_EMAIL=billing@yourdomain.com
 BASE_URL=https://yourdomain.railway.app
+ADMIN_PASSWORD=your_secure_admin_password_min_12_chars
 ```
 
-#### Security Variables (Optional but Recommended)
+#### Legacy Variables (Deprecated - Not Recommended)
 ```bash
-# Disable admin test route in production
-ADMIN_TEST_ENABLED=false
-
-# If you need the admin test route temporarily in production
-# ADMIN_TEST_ENABLED=true
+# The old admin test route is deprecated - use the new Admin Portal instead
+# Only add these if you specifically need the legacy /admin-test route
+# ADMIN_TEST_ENABLED=false
 # ADMIN_TEST_SECRET=your_very_secure_32_char_minimum_secret
 ```
 
@@ -35,7 +34,7 @@ ADMIN_TEST_ENABLED=false
 - [ ] Verify `STRIPE_SECRET_KEY` starts with `sk_live_` (not `sk_test_`)
 - [ ] Set `NODE_ENV=production`
 - [ ] Update `BASE_URL` to your Railway domain
-- [ ] Set `ADMIN_TEST_ENABLED=false` for production
+- [ ] Set `ADMIN_PASSWORD` for secure admin portal access (minimum 12 characters)
 - [ ] Verify `SENDER_EMAIL` is verified in SendGrid
 - [ ] Generate a secure JWT_SECRET (64+ characters)
 
