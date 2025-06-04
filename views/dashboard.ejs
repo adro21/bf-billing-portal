@@ -135,7 +135,18 @@
                             <% }); %>
                         <% } %>
 
-                        <!-- Upcoming Invoice -->
+                        <!-- Upcoming Invoice or Subscription Status -->
+                        <%
+                        // Check if we have a cancelled or cancelling subscription
+                        let cancelledSubscription = null;
+                        if (subscriptions && subscriptions.length > 0) {
+                            cancelledSubscription = subscriptions.find(sub => 
+                                sub.status === 'canceled' || 
+                                sub.cancel_at_period_end === true
+                            );
+                        }
+                        %>
+                        
                         <% if (upcomingInvoice) { %>
                             <%
                             // Calculate days until due
@@ -214,6 +225,112 @@
                                                 </div>
                                             </div>
                                         <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% } else if (cancelledSubscription) { %>
+                            <%
+                            // Handle cancelled or cancelling subscription display
+                            const isAlreadyCancelled = cancelledSubscription.status === 'canceled';
+                            const willCancelAtPeriodEnd = cancelledSubscription.cancel_at_period_end === true;
+                            const periodEnd = new Date(cancelledSubscription.current_period_end * 1000);
+                            const today = new Date();
+                            const daysUntilEnd = Math.ceil((periodEnd - today) / (1000 * 60 * 60 * 24));
+                            
+                            let badgeClass = '';
+                            let badgeText = '';
+                            let iconClass = '';
+                            let iconColor = '';
+                            let headerText = '';
+                            let subText = '';
+                            
+                            if (isAlreadyCancelled) {
+                                badgeClass = 'bg-red-100 text-red-700';
+                                badgeText = 'Cancelled';
+                                iconClass = 'bg-red-50';
+                                iconColor = 'text-red-600';
+                                headerText = 'Subscription Cancelled';
+                                subText = 'No further billing';
+                            } else if (willCancelAtPeriodEnd) {
+                                if (daysUntilEnd <= 7) {
+                                    badgeClass = 'bg-orange-100 text-orange-700';
+                                    badgeText = 'Ending Soon';
+                                } else {
+                                    badgeClass = 'bg-yellow-100 text-yellow-700';
+                                    badgeText = 'Set to Cancel';
+                                }
+                                iconClass = 'bg-orange-50';
+                                iconColor = 'text-orange-600';
+                                headerText = 'Subscription Status';
+                                if (daysUntilEnd === 1) {
+                                    subText = 'Ends tomorrow';
+                                } else if (daysUntilEnd === 0) {
+                                    subText = 'Ends today';
+                                } else if (daysUntilEnd < 0) {
+                                    subText = 'Service ended';
+                                } else {
+                                    subText = `Ends in ${daysUntilEnd} day${daysUntilEnd !== 1 ? 's' : ''}`;
+                                }
+                            }
+                            %>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
+                                    <div class="d-flex align-items-start justify-content-between mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="<%= iconClass %> rounded-circle p-2 me-3">
+                                                <i class="bi bi-calendar-x <%= iconColor %>"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="fw-bold text-slate-900 mb-0"><%= headerText %></h6>
+                                                <small class="text-slate-500"><%= subText %></small>
+                                            </div>
+                                        </div>
+                                        <span class="badge <%= badgeClass %> rounded-pill"><%= badgeText %></span>
+                                    </div>
+                                    
+                                    <div class="border-top pt-3">
+                                        <div class="mb-3">
+                                            <h5 class="fw-bold text-slate-900 mb-1">
+                                                $0.00
+                                            </h5>
+                                            <div class="text-slate-600">
+                                                <% if (isAlreadyCancelled) { %>
+                                                    Cancelled <%= cancelledSubscription.canceled_at ? 
+                                                        new Date(cancelledSubscription.canceled_at * 1000).toLocaleDateString('en-US', { 
+                                                            month: 'long', 
+                                                            day: 'numeric',
+                                                            year: 'numeric'
+                                                        }) : 'recently' %>
+                                                <% } else { %>
+                                                    Service ends <%= periodEnd.toLocaleDateString('en-US', { 
+                                                        month: 'long', 
+                                                        day: 'numeric',
+                                                        year: 'numeric'
+                                                    }) %>
+                                                <% } %>
+                                            </div>
+                                        </div>
+
+                                        <div class="bg-slate-50 rounded-2 p-3">
+                                            <div class="small text-slate-600">
+                                                <% if (isAlreadyCancelled) { %>
+                                                    <strong class="text-slate-700 d-block mb-1">No upcoming payments</strong>
+                                                    Your subscription has been cancelled and no further charges will be made.
+                                                <% } else if (willCancelAtPeriodEnd) { %>
+                                                    <strong class="text-slate-700 d-block mb-1">No upcoming payments</strong>
+                                                    Your subscription is set to cancel at the end of the current billing period. You'll continue to have access until <%= periodEnd.toLocaleDateString('en-US', { month: 'long', day: 'numeric' }) %>.
+                                                <% } %>
+                                            </div>
+                                            
+                                            <% if (customerPortalUrl && !isAlreadyCancelled) { %>
+                                                <div class="border-top border-slate-200 pt-3 mt-3">
+                                                    <a href="<%= customerPortalUrl %>" class="btn btn-outline-primary btn-sm w-100">
+                                                        <i class="bi bi-arrow-clockwise me-2"></i>
+                                                        Reactivate Subscription
+                                                    </a>
+                                                </div>
+                                            <% } %>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
