@@ -235,11 +235,14 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
     ]);
 
     // Extract data from settled promises
-    const invoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
+    const allInvoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
     const subscriptions = subscriptionsResponse.status === 'fulfilled' ? subscriptionsResponse.value.data : [];
     const paymentMethods = paymentMethodsResponse.status === 'fulfilled' ? paymentMethodsResponse.value.data : [];
     const upcomingInvoice = upcomingInvoiceResponse.status === 'fulfilled' ? upcomingInvoiceResponse.value : null;
     const customerPortalUrl = customerPortalSession.status === 'fulfilled' ? customerPortalSession.value.url : null;
+
+    // Filter out $0 invoices (trials, credits, etc.) to avoid user confusion
+    const invoices = allInvoices.filter(invoice => invoice.total > 0);
 
     res.render('dashboard', { 
       email, 
@@ -356,11 +359,14 @@ app.get('/admin-test', async (req, res) => {
     ]);
 
     // Extract data from settled promises
-    const invoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
+    const allInvoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
     const subscriptions = subscriptionsResponse.status === 'fulfilled' ? subscriptionsResponse.value.data : [];
     const paymentMethods = paymentMethodsResponse.status === 'fulfilled' ? paymentMethodsResponse.value.data : [];
     const upcomingInvoice = upcomingInvoiceResponse.status === 'fulfilled' ? upcomingInvoiceResponse.value : null;
     const customerPortalUrl = customerPortalSession.status === 'fulfilled' ? customerPortalSession.value.url : null;
+
+    // Filter out $0 invoices (trials, credits, etc.) to avoid user confusion
+    const invoices = allInvoices.filter(invoice => invoice.total > 0);
 
     // Log the admin access for security audit
     console.log(`🔧 ADMIN TEST ACCESS: Customer ${customerId} accessed at ${new Date().toISOString()}`);
@@ -375,7 +381,7 @@ app.get('/admin-test', async (req, res) => {
       upcomingInvoice,
       customerPortalUrl,
       error: null,
-      isAdminTest: true  // Flag for template to show admin warning
+      isAdminTest: true
     });
     
   } catch (error) {
