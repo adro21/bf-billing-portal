@@ -517,7 +517,8 @@ app.get('/download-all-invoices', authenticateToken, async (req, res) => {
           continue;
         }
         
-        const pdfBuffer = await pdfResponse.buffer();
+        const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+        const pdfBuffer = Buffer.from(pdfArrayBuffer);
         
         // Create filename
         const date = new Date(invoice.created * 1000);
