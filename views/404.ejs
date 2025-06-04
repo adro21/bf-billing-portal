@@ -4,22 +4,46 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Page Not Found - Billing Portal</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-4Q6Gf2aSP4eDXB8Miphtr37CMZZQ5oXLH2yaXMJ2w8e2ZtHTl7GptT4jmndRuHDT" crossorigin="anonymous">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
     <link rel="stylesheet" href="/css/styles.css">
 </head>
-<body>
-    <div class="error-container">
-        <div class="error-card">
-            <h1>404</h1>
-            <h2>Page Not Found</h2>
-            <p>The page you're looking for doesn't exist or has been moved.</p>
-            <a href="/" class="btn btn-primary">Go to Login</a>
+<body class="bg-slate-50">
+    <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+        <div class="row w-100 justify-content-center">
+            <div class="col-md-6 col-lg-5">
+                <div class="card border-0 shadow-tailwind">
+                    <div class="card-body text-center p-5">
+                        <div class="mb-4">
+                            <i class="bi bi-exclamation-triangle text-yellow-500" style="font-size: 4rem;"></i>
+                        </div>
+                        <h1 class="display-4 fw-bold text-slate-900 mb-3">404</h1>
+                        <h2 class="h5 text-slate-700 mb-3">Page Not Found</h2>
+                        <p class="text-slate-500 mb-4">
+                            The page you're looking for doesn't exist or has been moved.
+                        </p>
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-center">
+                            <a href="/" class="btn btn-primary">
+                                <i class="bi bi-house-door me-2"></i>
+                                Go to Login
+                            </a>
+                            <button onclick="history.back()" class="btn btn-outline-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>
+                                Go Back
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <footer class="footer">
-        <div class="container">
-            <p>&copy; 2024 MySaaS. Secure billing portal powered by Stripe.</p>
+    <footer class="position-fixed bottom-0 w-100 bg-white border-top py-3">
+        <div class="container text-center">
+            <small class="text-slate-500">&copy; 2024 MySaaS. Secure billing portal powered by Stripe.</small>
         </div>
     </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.6/dist/js/bootstrap.bundle.min.js" integrity="sha384-j1CDi7MgGQ12Z7Qab0qlWQ/Qqz24Gc6BM0thvEMVjHnfYGF0rmFCozFSxQBxwHKO" crossorigin="anonymous"></script>
 </body>
 </html> 

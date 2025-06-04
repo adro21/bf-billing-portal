@@ -9,8 +9,50 @@ const Stripe = require('stripe');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Environment validation and Stripe client setup
+function validateEnvironment() {
+  const requiredVars = ['STRIPE_SECRET_KEY', 'JWT_SECRET', 'SENDGRID_API_KEY', 'SENDER_EMAIL', 'BASE_URL'];
+  const missing = requiredVars.filter(varName => !process.env[varName]);
+  
+  if (missing.length > 0) {
+    console.error('❌ Missing required environment variables:', missing.join(', '));
+    process.exit(1);
+  }
+
+  // Validate Stripe key matches environment
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  
+  if (nodeEnv === 'production' && !stripeKey.startsWith('sk_live_')) {
+    console.error('❌ SECURITY WARNING: Production environment detected but using test Stripe key!');
+    process.exit(1);
+  }
+  
+  if (nodeEnv === 'development' && stripeKey.startsWith('sk_live_')) {
+    console.error('❌ SECURITY WARNING: Development environment detected but using live Stripe key!');
+    console.error('   This could result in charges to real customers. Exiting for safety.');
+    process.exit(1);
+  }
+
+  console.log(`✅ Environment: ${nodeEnv}`);
+  console.log(`✅ Stripe key type: ${stripeKey.startsWith('sk_live_') ? 'LIVE' : 'TEST'}`);
+}
+
+function getStripeClient() {
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  
+  if (!stripeKey) {
+    throw new Error('STRIPE_SECRET_KEY environment variable is required');
+  }
+  
+  return new Stripe(stripeKey);
+}
+
+// Validate environment on startup
+validateEnvironment();
+
 // Initialize Stripe and SendGrid
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = getStripeClient();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
 // Middleware
@@ -120,7 +162,7 @@ app.get('/verify', (req, res) => {
     // Set HttpOnly cookie
     res.cookie('auth', token, {
       httpOnly: true,
-      secure: false, // Set to true in production with HTTPS
+      secure: process.env.NODE_ENV === 'production', // HTTPS required in production
       sameSite: 'Lax',
       maxAge: 15 * 60 * 1000 // 15 minutes
     });
@@ -144,20 +186,69 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
       return res.render('dashboard', { 
         email, 
         error: 'No billing history found for this email address',
-        invoices: []
+        invoices: [],
+        subscriptions: [],
+        paymentMethods: [],
+        upcomingInvoice: null,
+        customerPortalUrl: null
       });
     }
 
-    // Get invoices for this customer
-    const invoices = await stripe.invoices.list({ 
-      customer: customer.id,
-      limit: 50 // Adjust as needed
-    });
+    // Fetch comprehensive billing data in parallel
+    const [
+      invoicesResponse,
+      subscriptionsResponse,
+      paymentMethodsResponse,
+      upcomingInvoiceResponse,
+      customerPortalSession
+    ] = await Promise.allSettled([
+      // Get invoices for this customer
+      stripe.invoices.list({ 
+        customer: customer.id,
+        limit: 50,
+        expand: ['data.subscription']
+      }),
+      
+      // Get active subscriptions
+      stripe.subscriptions.list({
+        customer: customer.id,
+        status: 'all',
+        expand: ['data.items.data.price.product']
+      }),
+      
+      // Get payment methods
+      stripe.paymentMethods.list({
+        customer: customer.id,
+        type: 'card'
+      }),
+      
+      // Get upcoming invoice (if any active subscriptions)
+      stripe.invoices.retrieveUpcoming({
+        customer: customer.id
+      }).catch(() => null), // Don't fail if no upcoming invoice
+      
+      // Create customer portal session
+      stripe.billingPortal.sessions.create({
+        customer: customer.id,
+        return_url: `${process.env.BASE_URL}/dashboard`
+      })
+    ]);
+
+    // Extract data from settled promises
+    const invoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
+    const subscriptions = subscriptionsResponse.status === 'fulfilled' ? subscriptionsResponse.value.data : [];
+    const paymentMethods = paymentMethodsResponse.status === 'fulfilled' ? paymentMethodsResponse.value.data : [];
+    const upcomingInvoice = upcomingInvoiceResponse.status === 'fulfilled' ? upcomingInvoiceResponse.value : null;
+    const customerPortalUrl = customerPortalSession.status === 'fulfilled' ? customerPortalSession.value.url : null;
 
     res.render('dashboard', { 
       email, 
       customer,
-      invoices: invoices.data,
+      invoices,
+      subscriptions,
+      paymentMethods,
+      upcomingInvoice,
+      customerPortalUrl,
       error: null
     });
   } catch (error) {
@@ -165,7 +256,140 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
     res.render('dashboard', { 
       email: req.user.email, 
       error: 'Failed to load billing history. Please try again',
-      invoices: []
+      invoices: [],
+      subscriptions: [],
+      paymentMethods: [],
+      upcomingInvoice: null,
+      customerPortalUrl: null
+    });
+  }
+});
+
+// Admin Test Route - INTERNAL USE ONLY for testing with live customer IDs
+// Security: Multiple layers of protection
+app.get('/admin-test', async (req, res) => {
+  // Layer 1: Environment-aware feature flag check
+  const nodeEnv = process.env.NODE_ENV || 'development';
+  const adminTestEnabled = process.env.ADMIN_TEST_ENABLED;
+  
+  // Auto-disable in production unless explicitly enabled
+  if (nodeEnv === 'production' && adminTestEnabled !== 'true') {
+    return res.status(404).json({ error: 'Not found' });
+  }
+  
+  // In development, allow if not explicitly disabled
+  if (nodeEnv === 'development' && adminTestEnabled === 'false') {
+    return res.status(404).json({ error: 'Admin test route disabled' });
+  }
+  
+  // If no explicit setting in development, default to enabled for convenience
+  if (nodeEnv === 'development' && !adminTestEnabled) {
+    console.log('⚠️  ADMIN_TEST_ENABLED not set - defaulting to enabled in development');
+  }
+  
+  // Layer 2: Environment safety check (extra safety)
+  if (nodeEnv === 'development' && process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')) {
+    return res.status(403).json({ 
+      error: 'Security: Live Stripe key detected in development environment. Admin test route disabled.' 
+    });
+  }
+  
+  // Layer 3: Secret token authentication
+  const providedSecret = req.query.secret || req.headers['x-admin-secret'];
+  const expectedSecret = process.env.ADMIN_TEST_SECRET;
+  
+  if (!expectedSecret || expectedSecret.length < 32) {
+    return res.status(500).json({ 
+      error: 'Admin test route misconfigured. Secret must be at least 32 characters.' 
+    });
+  }
+  
+  if (providedSecret !== expectedSecret) {
+    return res.status(401).json({ error: 'Unauthorized: Invalid or missing admin secret' });
+  }
+  
+  // Layer 4: Customer ID validation
+  const customerId = req.query.customerId;
+  if (!customerId || !customerId.startsWith('cus_')) {
+    return res.status(400).json({ 
+      error: 'Missing or invalid customerId parameter. Must start with cus_' 
+    });
+  }
+  
+  try {
+    // Fetch customer to verify it exists
+    const customer = await stripe.customers.retrieve(customerId);
+    
+    // Fetch billing data using the same logic as dashboard
+    const [
+      invoicesResponse,
+      subscriptionsResponse,
+      paymentMethodsResponse,
+      upcomingInvoiceResponse,
+      customerPortalSession
+    ] = await Promise.allSettled([
+      stripe.invoices.list({ 
+        customer: customerId,
+        limit: 50,
+        expand: ['data.subscription']
+      }),
+      
+      stripe.subscriptions.list({
+        customer: customerId,
+        status: 'all',
+        expand: ['data.items.data.price.product']
+      }),
+      
+      stripe.paymentMethods.list({
+        customer: customerId,
+        type: 'card'
+      }),
+      
+      stripe.invoices.retrieveUpcoming({
+        customer: customerId
+      }).catch(() => null),
+      
+      stripe.billingPortal.sessions.create({
+        customer: customerId,
+        return_url: `${process.env.BASE_URL}/admin-test?secret=${providedSecret}&customerId=${customerId}`
+      })
+    ]);
+
+    // Extract data from settled promises
+    const invoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
+    const subscriptions = subscriptionsResponse.status === 'fulfilled' ? subscriptionsResponse.value.data : [];
+    const paymentMethods = paymentMethodsResponse.status === 'fulfilled' ? paymentMethodsResponse.value.data : [];
+    const upcomingInvoice = upcomingInvoiceResponse.status === 'fulfilled' ? upcomingInvoiceResponse.value : null;
+    const customerPortalUrl = customerPortalSession.status === 'fulfilled' ? customerPortalSession.value.url : null;
+
+    // Log the admin access for security audit
+    console.log(`🔧 ADMIN TEST ACCESS: Customer ${customerId} accessed at ${new Date().toISOString()}`);
+    
+    // Render the same dashboard template but with admin context
+    res.render('dashboard', { 
+      email: customer.email || `Admin Test (${customerId})`,
+      customer,
+      invoices,
+      subscriptions,
+      paymentMethods,
+      upcomingInvoice,
+      customerPortalUrl,
+      error: null,
+      isAdminTest: true  // Flag for template to show admin warning
+    });
+    
+  } catch (error) {
+    console.error('Error in admin test route:', error);
+    
+    if (error.type === 'StripeInvalidRequestError' && error.code === 'resource_missing') {
+      return res.status(404).json({ 
+        error: `Customer ${customerId} not found in Stripe` 
+      });
+    }
+    
+    return res.status(500).json({ 
+      error: 'Failed to fetch customer billing data',
+      details: error.message 
     });
   }
 });
