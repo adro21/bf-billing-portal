@@ -12,9 +12,13 @@
     <!-- Navigation -->
     <nav class="navbar navbar-expand-lg">
         <div class="container">
-            <a class="navbar-brand" href="#">
-                <i class="bi bi-receipt-cutoff me-2 text-slate-600"></i>
-                Billing Portal
+            <a class="navbar-brand d-flex align-items-center" href="#">
+                <img src="/images/logo.png" 
+                     alt="Bounce Forward Logo" 
+                     class="me-2"
+                     style="height: 32px; width: auto;">
+                <!-- <span class="d-none d-sm-inline">Bounce Forward Billing</span>
+                <span class="d-inline d-sm-none">Billing</span> -->
             </a>
             <div class="navbar-nav ms-auto">
                 <div class="nav-item dropdown">
@@ -56,163 +60,245 @@
             </div>
         <% } %>
 
-        <!-- Account Overview Section -->
+        <!-- Account Status Section -->
         <% if (!error && customer) { %>
-            <div class="row mb-5">
-                <!-- Current Plan/Subscription -->
-                <% if (subscriptions && subscriptions.length > 0) { %>
-                    <div class="col-md-6 mb-4">
-                        <div class="card rounded-4 shadow-tailwind h-100">
-                            <div class="card-header bg-white border-bottom rounded-top-4">
-                                <h5 class="mb-0 text-slate-900 fw-semibold d-flex align-items-center">
-                                    <i class="bi bi-layers me-2 text-slate-600"></i>
-                                    Current Plan
-                                </h5>
+            <!-- Account Status Hero -->
+            <div class="mb-5 rounded-4 overflow-hidden">
+                <div>
+                    <div class="row align-items-center">
+                        <div class="col-12">
+                            <div class="d-flex align-items-center justify-content-between flex-wrap mb-4">
+                                <div>
+                                    <h2 class="h4 fw-bold text-slate-900 mb-1">Account Status</h2>
+                                    <p class="text-slate-600 mb-0">Your subscription and billing overview</p>
+                                </div>
+                                <% if (customerPortalUrl) { %>
+                                    <a href="<%= customerPortalUrl %>" class="btn btn-primary d-flex align-items-center">
+                                        <i class="bi bi-gear me-2"></i>
+                                        <span class="d-none d-sm-inline">Manage Account</span>
+                                        <span class="d-inline d-sm-none">Manage</span>
+                                    </a>
+                                <% } %>
                             </div>
-                            <div class="card-body">
-                                <% subscriptions.forEach(function(subscription) { %>
-                                    <div class="<%= subscriptions.indexOf(subscription) !== subscriptions.length - 1 ? 'mb-4 pb-3 border-bottom' : '' %>">
-                                        <div class="d-flex justify-content-between align-items-start mb-2">
-                                            <div>
-                                                <h6 class="fw-bold text-slate-900 mb-1">
-                                                    <%= subscription.items.data[0].price.product.name %>
-                                                </h6>
-                                                <p class="text-slate-600 mb-2">
-                                                    <%= (subscription.items.data[0].price.unit_amount / 100).toLocaleString('en-US', { 
-                                                        style: 'currency', 
-                                                        currency: subscription.items.data[0].price.currency.toUpperCase() 
-                                                    }) %>
-                                                    / <%= subscription.items.data[0].price.recurring.interval %>
-                                                </p>
+                        </div>
+                    </div>
+
+                    <!-- Status Grid -->
+                    <div class="row g-4">
+                        <!-- Current Subscription -->
+                        <% if (subscriptions && subscriptions.length > 0) { %>
+                            <% subscriptions.forEach(function(subscription, index) { %>
+                                <div class="col-md-6 col-lg-4">
+                                    <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
+                                        <div class="d-flex align-items-start justify-content-between mb-3">
+                                            <div class="d-flex align-items-center">
+                                                <div class="bg-blue-50 rounded-circle p-2 me-3">
+                                                    <i class="bi bi-layers text-blue-600"></i>
+                                                </div>
+                                                <div>
+                                                    <h6 class="fw-bold text-slate-900 mb-0">Current Plan</h6>
+                                                    <small class="text-slate-500">Active subscription</small>
+                                                </div>
                                             </div>
                                             <span class="badge <%= subscription.status === 'active' ? 'bg-success' : subscription.status === 'canceled' ? 'bg-danger' : subscription.status === 'past_due' ? 'bg-warning text-dark' : 'bg-secondary' %> rounded-pill">
                                                 <%= subscription.status.charAt(0).toUpperCase() + subscription.status.slice(1) %>
                                             </span>
                                         </div>
-                                        <div class="small text-slate-500">
-                                            <div class="mb-1">
-                                                <strong>Current period:</strong> 
-                                                <%= new Date(subscription.current_period_start * 1000).toLocaleDateString('en-US') %> - 
-                                                <%= new Date(subscription.current_period_end * 1000).toLocaleDateString('en-US') %>
+                                        
+                                        <div class="mb-3">
+                                            <h5 class="fw-bold text-slate-900 mb-1">
+                                                <%= subscription.items.data[0].price.product.name %>
+                                            </h5>
+                                            <div class="text-slate-600 fw-medium">
+                                                <%= (subscription.items.data[0].price.unit_amount / 100).toLocaleString('en-US', { 
+                                                    style: 'currency', 
+                                                    currency: subscription.items.data[0].price.currency.toUpperCase() 
+                                                }) %>
+                                                <span class="text-slate-500">/ <%= subscription.items.data[0].price.recurring.interval %></span>
                                             </div>
-                                            <% if (subscription.status === 'active') { %>
-                                                <div>
-                                                    <strong>Next billing:</strong> 
-                                                    <%= new Date(subscription.current_period_end * 1000).toLocaleDateString('en-US', { 
-                                                        year: 'numeric', 
-                                                        month: 'long', 
-                                                        day: 'numeric' 
-                                                    }) %>
+                                        </div>
+
+                                        <div class="border-top pt-3">
+                                            <div class="row g-2 small text-slate-600">
+                                                <div class="col-12">
+                                                    <strong class="text-slate-700">Billing Period:</strong><br>
+                                                    <%= new Date(subscription.current_period_start * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) %> - 
+                                                    <%= new Date(subscription.current_period_end * 1000).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) %>
                                                 </div>
-                                            <% } else if (subscription.status === 'canceled' && subscription.canceled_at) { %>
-                                                <div>
-                                                    <strong>Canceled:</strong> 
-                                                    <%= new Date(subscription.canceled_at * 1000).toLocaleDateString('en-US', { 
-                                                        year: 'numeric', 
-                                                        month: 'long', 
-                                                        day: 'numeric' 
-                                                    }) %>
-                                                </div>
-                                            <% } %>
+                                                <% if (subscription.status === 'active') { %>
+                                                    <div class="col-12 mt-2">
+                                                        <strong class="text-slate-700">Next Billing:</strong><br>
+                                                        <%= new Date(subscription.current_period_end * 1000).toLocaleDateString('en-US', { 
+                                                            weekday: 'long',
+                                                            year: 'numeric', 
+                                                            month: 'long', 
+                                                            day: 'numeric' 
+                                                        }) %>
+                                                    </div>
+                                                <% } else if (subscription.status === 'canceled' && subscription.canceled_at) { %>
+                                                    <div class="col-12 mt-2">
+                                                        <strong class="text-slate-700">Canceled:</strong><br>
+                                                        <%= new Date(subscription.canceled_at * 1000).toLocaleDateString('en-US', { 
+                                                            year: 'numeric', 
+                                                            month: 'long', 
+                                                            day: 'numeric' 
+                                                        }) %>
+                                                    </div>
+                                                <% } %>
+                                            </div>
                                         </div>
                                     </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                    </div>
-                <% } %>
+                                </div>
+                            <% }); %>
+                        <% } %>
 
-                <!-- Upcoming Invoice or Payment Methods -->
-                <div class="col-md-6 mb-4">
-                    <% if (upcomingInvoice) { %>
                         <!-- Upcoming Invoice -->
-                        <div class="card rounded-4 shadow-tailwind h-100">
-                            <div class="card-header bg-white border-bottom rounded-top-4">
-                                <h5 class="mb-0 text-slate-900 fw-semibold d-flex align-items-center">
-                                    <i class="bi bi-calendar-event me-2 text-slate-600"></i>
-                                    Next Invoice
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <div class="d-flex justify-content-between align-items-start mb-3">
-                                    <div>
-                                        <h6 class="fw-bold text-slate-900 mb-1">
+                        <% if (upcomingInvoice) { %>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
+                                    <div class="d-flex align-items-start justify-content-between mb-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-yellow-50 rounded-circle p-2 me-3">
+                                                <i class="bi bi-calendar-event text-yellow-600"></i>
+                                            </div>
+                                            <div>
+                                                <h6 class="fw-bold text-slate-900 mb-0">Next Invoice</h6>
+                                                <small class="text-slate-500">Upcoming charge</small>
+                                            </div>
+                                        </div>
+                                        <span class="badge bg-yellow-100 text-yellow-700 rounded-pill">Due Soon</span>
+                                    </div>
+                                    
+                                    <div class="mb-3">
+                                        <h5 class="fw-bold text-slate-900 mb-1">
                                             <%= (upcomingInvoice.amount_due / 100).toLocaleString('en-US', { 
                                                 style: 'currency', 
                                                 currency: upcomingInvoice.currency.toUpperCase() 
                                             }) %>
-                                        </h6>
-                                        <p class="text-slate-600 mb-0">
+                                        </h5>
+                                        <div class="text-slate-600">
                                             Due <%= new Date(upcomingInvoice.period_end * 1000).toLocaleDateString('en-US', { 
+                                                month: 'long', 
+                                                day: 'numeric',
+                                                year: 'numeric'
+                                            }) %>
+                                        </div>
+                                    </div>
+
+                                    <% if (upcomingInvoice.lines && upcomingInvoice.lines.data.length > 0) { %>
+                                        <div class="border-top pt-3">
+                                            <div class="small text-slate-600">
+                                                <strong class="text-slate-700">Items:</strong><br>
+                                                <% upcomingInvoice.lines.data.slice(0, 2).forEach(function(line) { %>
+                                                    <div class="text-slate-600"><%= line.description %></div>
+                                                <% }); %>
+                                                <% if (upcomingInvoice.lines.data.length > 2) { %>
+                                                    <div class="text-slate-500">+ <%= upcomingInvoice.lines.data.length - 2 %> more item<%= upcomingInvoice.lines.data.length - 2 !== 1 ? 's' : '' %></div>
+                                                <% } %>
+                                            </div>
+                                        </div>
+                                    <% } %>
+                                </div>
+                            </div>
+                        <% } %>
+
+                        <!-- Payment Methods -->
+                        <% if (paymentMethods && paymentMethods.length > 0) { %>
+                            <div class="col-md-6 col-lg-4">
+                                <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-green-50 rounded-circle p-2 me-3">
+                                            <i class="bi bi-credit-card text-green-600"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="fw-bold text-slate-900 mb-0">Payment Method</h6>
+                                            <small class="text-slate-500"><%= paymentMethods.length %> card<%= paymentMethods.length !== 1 ? 's' : '' %> on file</small>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="space-y-3">
+                                        <% paymentMethods.slice(0, 2).forEach(function(pm, index) { %>
+                                            <div class="d-flex align-items-center <%= index !== 0 ? 'mt-3' : '' %>">
+                                                <div class="me-3">
+                                                    <i class="bi bi-credit-card-2-front text-slate-400" style="font-size: 1.25rem;"></i>
+                                                </div>
+                                                <div class="flex-grow-1">
+                                                    <div class="fw-medium text-slate-900">
+                                                        •••• •••• •••• <%= pm.card.last4 %>
+                                                    </div>
+                                                    <div class="small text-slate-500">
+                                                        <%= pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1) %> • 
+                                                        <%= pm.card.exp_month %>/<%= pm.card.exp_year %>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        <% }); %>
+                                        <% if (paymentMethods.length > 2) { %>
+                                            <div class="text-center pt-2">
+                                                <small class="text-slate-500">+ <%= paymentMethods.length - 2 %> more card<%= paymentMethods.length - 2 !== 1 ? 's' : '' %></small>
+                                            </div>
+                                        <% } %>
+                                    </div>
+                                </div>
+                            </div>
+                        <% } %>
+
+                        <!-- Account Summary -->
+                        <div class="col-md-12 col-lg-4">
+                            <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="bg-purple-50 rounded-circle p-2 me-3">
+                                        <i class="bi bi-graph-up text-purple-600"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="fw-bold text-slate-900 mb-0">Account Summary</h6>
+                                        <small class="text-slate-500">Your account overview</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="border-top pt-3">
+                                    <div class="row g-2 small text-slate-600">
+                                        <div class="col-12 col-md-3">
+                                            <strong class="text-slate-700">Customer Since:</strong><br>
+                                            <%= new Date(customer.created * 1000).toLocaleDateString('en-US', { 
                                                 year: 'numeric', 
                                                 month: 'long', 
                                                 day: 'numeric' 
                                             }) %>
-                                        </p>
+                                        </div>
+                                        <% 
+                                        const totalPaid = invoices.reduce((sum, invoice) => sum + invoice.amount_paid, 0);
+                                        const lastPayment = invoices.find(invoice => invoice.status === 'paid');
+                                        %>
+                                        <div class="col-12 col-md-3 mt-2">
+                                            <strong class="text-slate-700">Total Paid:</strong><br>
+                                            <%= (totalPaid / 100).toLocaleString('en-US', { 
+                                                style: 'currency', 
+                                                currency: invoices.length > 0 ? invoices[0].currency.toUpperCase() : 'USD' 
+                                            }) %>
+                                        </div>
+                                        <div class="col-12 col-md-3 mt-2">
+                                            <strong class="text-slate-700">Invoices:</strong><br>
+                                            <%= invoices.length %> total
+                                        </div>
+                                        <% if (lastPayment) { %>
+                                            <div class="col-12 col-md-3 mt-2">
+                                                <strong class="text-slate-700">Last Payment:</strong><br>
+                                                <%= new Date(lastPayment.status_transitions.paid_at * 1000).toLocaleDateString('en-US', { 
+                                                    month: 'short', 
+                                                    day: 'numeric',
+                                                    year: 'numeric'
+                                                }) %>
+                                            </div>
+                                        <% } %>
                                     </div>
-                                    <span class="badge bg-blue-100 text-blue-700 rounded-pill">Upcoming</span>
                                 </div>
-                                <% if (upcomingInvoice.lines && upcomingInvoice.lines.data.length > 0) { %>
-                                    <div class="small text-slate-500">
-                                        <% upcomingInvoice.lines.data.forEach(function(line) { %>
-                                            <div><%= line.description %></div>
-                                        <% }); %>
-                                    </div>
-                                <% } %>
-                            </div>
-                        </div>
-                    <% } else if (paymentMethods && paymentMethods.length > 0) { %>
-                        <!-- Payment Methods -->
-                        <div class="card rounded-4 shadow-tailwind h-100">
-                            <div class="card-header bg-white border-bottom rounded-top-4">
-                                <h5 class="mb-0 text-slate-900 fw-semibold d-flex align-items-center">
-                                    <i class="bi bi-credit-card me-2 text-slate-600"></i>
-                                    Payment Methods
-                                </h5>
-                            </div>
-                            <div class="card-body">
-                                <% paymentMethods.forEach(function(pm) { %>
-                                    <div class="d-flex align-items-center <%= paymentMethods.indexOf(pm) !== paymentMethods.length - 1 ? 'mb-3' : '' %>">
-                                        <div class="me-3">
-                                            <i class="bi bi-credit-card-2-front text-slate-400" style="font-size: 1.5rem;"></i>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="fw-semibold text-slate-900">
-                                                **** **** **** <%= pm.card.last4 %>
-                                            </div>
-                                            <div class="small text-slate-500">
-                                                <%= pm.card.brand.charAt(0).toUpperCase() + pm.card.brand.slice(1) %> • 
-                                                Expires <%= pm.card.exp_month %>/<%= pm.card.exp_year %>
-                                            </div>
-                                        </div>
-                                    </div>
-                                <% }); %>
-                            </div>
-                        </div>
-                    <% } %>
-                </div>
-            </div>
-
-            <!-- Quick Actions -->
-            <% if (customerPortalUrl) { %>
-                <div class="row mb-5">
-                    <div class="col-12">
-                        <div class="card rounded-4 shadow-tailwind bg-gradient-to-r from-blue-50 to-indigo-50 border-blue-200">
-                            <div class="card-body text-center py-4">
-                                <h6 class="fw-semibold text-slate-900 mb-2">
-                                    <i class="bi bi-gear me-2"></i>
-                                    Manage Your Account
-                                </h6>
-                                <p class="text-slate-600 mb-3">Update payment methods, billing address, download invoices, or modify your subscription</p>
-                                <a href="<%= customerPortalUrl %>" class="btn btn-primary">
-                                    <i class="bi bi-box-arrow-up-right me-2"></i>
-                                    Open Customer Portal
-                                </a>
                             </div>
                         </div>
                     </div>
                 </div>
-            <% } %>
+            </div>
+
         <% } %>
 
         <!-- Invoices Section -->
@@ -286,9 +372,9 @@
                                                 <a href="<%= invoice.hosted_invoice_url %>" 
                                                    target="_blank" 
                                                    rel="noopener noreferrer"
-                                                   class="btn btn-outline-primary btn-sm">
-                                                    <i class="bi bi-download me-1"></i>
-                                                    PDF
+                                                   class="btn btn-primary btn-sm">
+                                                    <i class="bi bi-eye me-1"></i>
+                                                    View Receipt
                                                 </a>
                                             <% } else { %>
                                                 <button class="btn btn-outline-secondary btn-sm" disabled>
@@ -356,8 +442,8 @@
                                                    target="_blank" 
                                                    rel="noopener noreferrer"
                                                    class="mobile-download-btn">
-                                                    <i class="bi bi-download"></i>
-                                                    Download PDF
+                                                    <i class="bi bi-eye"></i>
+                                                    View Receipt
                                                 </a>
                                             <% } else { %>
                                                 <button class="mobile-download-btn mobile-disabled" disabled>
