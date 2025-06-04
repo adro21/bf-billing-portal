@@ -308,15 +308,22 @@
                                             }) %>
                                         </div>
                                         <% 
-                                        const totalPaid = invoices.reduce((sum, invoice) => sum + invoice.amount_paid, 0);
+                                        const outstandingBalance = invoices.reduce((sum, invoice) => {
+                                            if (invoice.status === 'open' || invoice.status === 'past_due') {
+                                                return sum + invoice.amount_due;
+                                            }
+                                            return sum;
+                                        }, 0);
                                         const lastPayment = invoices.find(invoice => invoice.status === 'paid');
                                         %>
                                         <div class="col-6 col-md-3 col-lg-6 mt-2">
-                                            <strong class="text-slate-700">Total Paid:</strong><br>
-                                            <%= (totalPaid / 100).toLocaleString('en-US', { 
-                                                style: 'currency', 
-                                                currency: invoices.length > 0 ? invoices[0].currency.toUpperCase() : 'USD' 
-                                            }) %>
+                                            <strong class="text-slate-700">Outstanding Balance:</strong><br>
+                                            <span class="<%= outstandingBalance > 0 ? 'text-yellow-600' : 'text-green-600' %>">
+                                                <%= (outstandingBalance / 100).toLocaleString('en-US', { 
+                                                    style: 'currency', 
+                                                    currency: invoices.length > 0 ? invoices[0].currency.toUpperCase() : 'USD' 
+                                                }) %>
+                                            </span>
                                         </div>
                                         <div class="col-6 col-md-3 col-lg-6 mt-2">
                                             <strong class="text-slate-700">Invoices:</strong><br>
