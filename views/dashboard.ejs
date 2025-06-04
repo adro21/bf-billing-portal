@@ -154,6 +154,30 @@
 
                         <!-- Upcoming Invoice -->
                         <% if (upcomingInvoice) { %>
+                            <%
+                            // Calculate days until due
+                            const dueDate = new Date(upcomingInvoice.period_end * 1000);
+                            const today = new Date();
+                            const daysUntilDue = Math.ceil((dueDate - today) / (1000 * 60 * 60 * 24));
+                            
+                            // Determine badge based on days until due
+                            let badgeClass = '';
+                            let badgeText = '';
+                            
+                            if (daysUntilDue <= 7) {
+                                badgeClass = 'bg-red-100 text-red-700';
+                                badgeText = 'Due Soon';
+                            } else if (daysUntilDue <= 14) {
+                                badgeClass = 'bg-yellow-100 text-yellow-700';
+                                badgeText = 'Due Soon';
+                            } else if (daysUntilDue <= 30) {
+                                badgeClass = 'bg-blue-100 text-blue-700';
+                                badgeText = 'Upcoming';
+                            } else {
+                                badgeClass = 'bg-slate-100 text-slate-600';
+                                badgeText = 'Scheduled';
+                            }
+                            %>
                             <div class="col-md-6 col-lg-4">
                                 <div class="bg-white rounded-3 p-4 h-100 border border-slate-200">
                                     <div class="d-flex align-items-start justify-content-between mb-3">
@@ -163,10 +187,15 @@
                                             </div>
                                             <div>
                                                 <h6 class="fw-bold text-slate-900 mb-0">Next Invoice</h6>
-                                                <small class="text-slate-500">Upcoming charge</small>
+                                                <small class="text-slate-500">
+                                                    <%= daysUntilDue === 1 ? 'Tomorrow' : 
+                                                        daysUntilDue === 0 ? 'Today' : 
+                                                        daysUntilDue < 0 ? 'Overdue' :
+                                                        `In ${daysUntilDue} day${daysUntilDue !== 1 ? 's' : ''}` %>
+                                                </small>
                                             </div>
                                         </div>
-                                        <span class="badge bg-yellow-100 text-yellow-700 rounded-pill">Due Soon</span>
+                                        <span class="badge <%= badgeClass %> rounded-pill"><%= badgeText %></span>
                                     </div>
                                     
                                     <div class="mb-3">
@@ -258,7 +287,7 @@
                                 
                                 <div class="border-top pt-3">
                                     <div class="row g-2 small text-slate-600">
-                                        <div class="col-12 col-md-3">
+                                        <div class="col-12 col-md-3 col-lg-6">
                                             <strong class="text-slate-700">Customer Since:</strong><br>
                                             <%= new Date(customer.created * 1000).toLocaleDateString('en-US', { 
                                                 year: 'numeric', 
@@ -270,19 +299,19 @@
                                         const totalPaid = invoices.reduce((sum, invoice) => sum + invoice.amount_paid, 0);
                                         const lastPayment = invoices.find(invoice => invoice.status === 'paid');
                                         %>
-                                        <div class="col-12 col-md-3 mt-2">
+                                        <div class="col-12 col-md-3 col-lg-6 mt-2">
                                             <strong class="text-slate-700">Total Paid:</strong><br>
                                             <%= (totalPaid / 100).toLocaleString('en-US', { 
                                                 style: 'currency', 
                                                 currency: invoices.length > 0 ? invoices[0].currency.toUpperCase() : 'USD' 
                                             }) %>
                                         </div>
-                                        <div class="col-12 col-md-3 mt-2">
+                                        <div class="col-12 col-md-3 col-lg-6 mt-2">
                                             <strong class="text-slate-700">Invoices:</strong><br>
                                             <%= invoices.length %> total
                                         </div>
                                         <% if (lastPayment) { %>
-                                            <div class="col-12 col-md-3 mt-2">
+                                            <div class="col-12 col-md-3 col-lg-6 mt-2">
                                                 <strong class="text-slate-700">Last Payment:</strong><br>
                                                 <%= new Date(lastPayment.status_transitions.paid_at * 1000).toLocaleDateString('en-US', { 
                                                     month: 'short', 
@@ -387,71 +416,69 @@
                                 </div>
 
                                 <!-- Mobile Layout -->
-                                <div class="d-block d-md-none">
-                                    <div class="mobile-invoice-card">
-                                        <!-- Top Section: Status and Amount -->
-                                        <div class="mobile-header">
-                                            <div class="mobile-status-row">
-                                                <div class="status-indicator <%= invoice.status %>"></div>
-                                                <span class="mobile-status-text">
-                                                    <%= invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) %>
-                                                </span>
+                                <div class="d-block d-md-none mobile-invoice-item">
+                                    <!-- Header: Status and Amount -->
+                                    <div class="mobile-header">
+                                        <div class="mobile-status-row">
+                                            <div class="status-indicator <%= invoice.status %>"></div>
+                                            <span class="mobile-status-text">
+                                                <%= invoice.status.charAt(0).toUpperCase() + invoice.status.slice(1) %>
+                                            </span>
+                                        </div>
+                                        <div class="mobile-amount-display">
+                                            <%= (invoice.amount_paid / 100).toLocaleString('en-US', { 
+                                                style: 'currency', 
+                                                currency: invoice.currency.toUpperCase() 
+                                            }) %>
+                                        </div>
+                                    </div>
+
+                                    <!-- Details Grid -->
+                                    <div class="mobile-details-grid">
+                                        <% if (invoice.number) { %>
+                                            <div class="mobile-detail-item">
+                                                <span class="mobile-detail-label">Invoice</span>
+                                                <span class="mobile-detail-value">#<%= invoice.number %></span>
                                             </div>
-                                            <div class="mobile-amount-display">
-                                                <%= (invoice.amount_paid / 100).toLocaleString('en-US', { 
-                                                    style: 'currency', 
-                                                    currency: invoice.currency.toUpperCase() 
+                                        <% } %>
+                                        
+                                        <div class="mobile-detail-item">
+                                            <span class="mobile-detail-label">Date</span>
+                                            <span class="mobile-detail-value">
+                                                <%= new Date(invoice.created * 1000).toLocaleDateString('en-US', { 
+                                                    year: 'numeric', 
+                                                    month: 'short', 
+                                                    day: 'numeric' 
                                                 }) %>
-                                            </div>
+                                            </span>
                                         </div>
-
-                                        <!-- Invoice Details -->
-                                        <div class="mobile-details-section">
-                                            <% if (invoice.number) { %>
-                                                <div class="mobile-detail-row">
-                                                    <span class="mobile-label">Invoice</span>
-                                                    <span class="mobile-value">#<%= invoice.number %></span>
-                                                </div>
-                                            <% } %>
-                                            
-                                            <div class="mobile-detail-row">
-                                                <span class="mobile-label">Date</span>
-                                                <span class="mobile-value">
-                                                    <%= new Date(invoice.created * 1000).toLocaleDateString('en-US', { 
-                                                        year: 'numeric', 
-                                                        month: 'short', 
-                                                        day: 'numeric' 
-                                                    }) %>
+                                        
+                                        <% if (invoice.description) { %>
+                                            <div class="mobile-detail-item mobile-description-item">
+                                                <span class="mobile-detail-label">Description</span>
+                                                <span class="mobile-detail-value mobile-description-value">
+                                                    <%= invoice.description %>
                                                 </span>
                                             </div>
-                                            
-                                            <% if (invoice.description) { %>
-                                                <div class="mobile-detail-row">
-                                                    <span class="mobile-label">Description</span>
-                                                    <span class="mobile-value mobile-description">
-                                                        <%= invoice.description %>
-                                                    </span>
-                                                </div>
-                                            <% } %>
-                                        </div>
+                                        <% } %>
+                                    </div>
 
-                                        <!-- Action Button -->
-                                        <div class="mobile-action-section">
-                                            <% if (invoice.hosted_invoice_url) { %>
-                                                <a href="<%= invoice.hosted_invoice_url %>" 
-                                                   target="_blank" 
-                                                   rel="noopener noreferrer"
-                                                   class="mobile-download-btn">
-                                                    <i class="bi bi-eye"></i>
-                                                    View Receipt
-                                                </a>
-                                            <% } else { %>
-                                                <button class="mobile-download-btn mobile-disabled" disabled>
-                                                    <i class="bi bi-file-x"></i>
-                                                    Not Available
-                                                </button>
-                                            <% } %>
-                                        </div>
+                                    <!-- Action Button -->
+                                    <div class="mobile-action-row">
+                                        <% if (invoice.hosted_invoice_url) { %>
+                                            <a href="<%= invoice.hosted_invoice_url %>" 
+                                               target="_blank" 
+                                               rel="noopener noreferrer"
+                                               class="mobile-view-btn">
+                                                <i class="bi bi-eye"></i>
+                                                View Receipt
+                                            </a>
+                                        <% } else { %>
+                                            <button class="mobile-view-btn disabled" disabled>
+                                                <i class="bi bi-file-x"></i>
+                                                Not Available
+                                            </button>
+                                        <% } %>
                                     </div>
                                 </div>
                             </div>
