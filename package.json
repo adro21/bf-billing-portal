@@ -17,11 +17,13 @@
     "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
-    "node-fetch": "^3.3.2",
     "stripe": "^13.11.0"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "keywords": [
     "billing",

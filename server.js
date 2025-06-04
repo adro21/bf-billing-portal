@@ -6,7 +6,7 @@ const rateLimit = require('express-rate-limit');
 const sgMail = require('@sendgrid/mail');
 const Stripe = require('stripe');
 const JSZip = require('jszip');
-const fetch = require('node-fetch');
+// Using built-in fetch (available in Node.js 18+)
 
 const app = express();
 const PORT = process.env.PORT || 3000;
