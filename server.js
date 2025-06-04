@@ -123,8 +123,11 @@ app.post('/send-magic-link', magicLinkLimiter, async (req, res) => {
     // Email content
     const msg = {
       to: email,
-      from: process.env.SENDER_EMAIL,
-      subject: 'Your Billing Portal Login Link',
+      from: {
+        email: process.env.SENDER_EMAIL,
+        name: 'Bounce Forward Billing'
+      },
+      subject: 'Access Bounce Forward Billing Portal',
       text: `Click the following link to access your billing history: ${magicLink}\n\nThis link will expire in 15 minutes.`,
       html: `
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #E9E2E0; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
