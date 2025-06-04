@@ -10,10 +10,11 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="bg-slate-50">
-    <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <!-- Main content with bottom padding to account for footer -->
+    <div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: 100vh; padding-bottom: 200px;">
         <div class="row w-100 justify-content-center">
-            <div class="col-md-6 col-lg-5">
-                <div class="card border-0 shadow-tailwind">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-5">
+                <div class="card border-0 shadow-tailwind mx-2">
                     <div class="card-body text-center p-5">
                         <div class="mb-4">
                             <i class="bi bi-exclamation-triangle text-yellow-500" style="font-size: 4rem;"></i>
@@ -41,7 +42,7 @@
 
     <footer class="position-fixed bottom-0 w-100 bg-white border-top py-3">
         <div class="container text-center">
-            <small class="text-slate-500">&copy; <%= new Date().getFullYear() %> Bounce Forward Co. Secure billing portal powered by Stripe.</small>
+            <small class="text-slate-500">&copy; <%= new Date().getFullYear() %> Bounce Forward Co.</small>
         </div>
     </footer>
 

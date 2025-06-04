@@ -10,10 +10,11 @@
     <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body class="bg-light-pink">
-    <div class="container-fluid vh-100 d-flex align-items-center justify-content-center">
+    <!-- Main content with bottom padding to account for footer -->
+    <div class="container-fluid d-flex align-items-center justify-content-center" style="min-height: 100vh; padding-bottom: 200px;">
         <div class="row w-100 justify-content-center">
-            <div class="col-11 col-sm-8 col-md-6 col-lg-4">
-                <div class="card border-0 shadow-tailwind">
+            <div class="col-12 col-sm-10 col-md-8 col-lg-6 col-xl-4">
+                <div class="card border-0 shadow-tailwind mx-2">
                     <div class="card-body p-4 p-md-5">
                         <div class="text-center mb-4 mb-md-5">
                             <div class="mb-4">
@@ -76,15 +77,9 @@
     <footer class="position-fixed bottom-0 w-100 bg-dark-pink py-3">
         <div class="container">
             <div class="row align-items-center">
-                <div class="col-md-6 text-center text-md-start">
+                <div class="col-12 text-center">
                     <small class="text-white d-none d-sm-inline">&copy; <%= new Date().getFullYear() %> Bounce Forward Co.</small>
                     <small class="text-white d-inline d-sm-none">&copy; <%= new Date().getFullYear() %> Bounce Forward</small>
-                </div>
-                <div class="col-md-6 text-center text-md-end">
-                    <div class="d-flex align-items-center justify-content-center justify-content-md-end">
-                        <i class="bi bi-shield-check me-2 text-white" style="opacity: 0.8;"></i>
-                        <small class="text-white" style="opacity: 0.9;">Secure • Private • Encrypted</small>
-                    </div>
                 </div>
             </div>
         </div>
