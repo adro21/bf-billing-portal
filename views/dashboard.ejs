@@ -410,7 +410,12 @@
                                                     if (lineItem.price && lineItem.price.product && lineItem.price.product.name) {
                                                         productName = lineItem.price.product.name;
                                                     } else if (lineItem.description) {
-                                                        productName = lineItem.description;
+                                                        // Clean up description by removing pricing info and quantity
+                                                        productName = lineItem.description
+                                                            .replace(/^\d+\s*×\s*/, '') // Remove "1 × " prefix
+                                                            .replace(/\s*\(at\s*\$[\d,]+\.?\d*\s*\/\s*\w+\).*$/, '') // Remove "(at $35.00 / month)" and anything after
+                                                            .replace(/\s*-\s*\$[\d,]+\.?\d*.*$/, '') // Remove "- $35.00" and anything after
+                                                            .trim();
                                                     }
                                                 }
                                                 %>
@@ -494,7 +499,12 @@
                                             if (lineItem.price && lineItem.price.product && lineItem.price.product.name) {
                                                 mobileProductName = lineItem.price.product.name;
                                             } else if (lineItem.description) {
-                                                mobileProductName = lineItem.description;
+                                                // Clean up description by removing pricing info and quantity
+                                                mobileProductName = lineItem.description
+                                                    .replace(/^\d+\s*×\s*/, '') // Remove "1 × " prefix
+                                                    .replace(/\s*\(at\s*\$[\d,]+\.?\d*\s*\/\s*\w+\).*$/, '') // Remove "(at $35.00 / month)" and anything after
+                                                    .replace(/\s*-\s*\$[\d,]+\.?\d*.*$/, '') // Remove "- $35.00" and anything after
+                                                    .trim();
                                             }
                                         }
                                         %>
