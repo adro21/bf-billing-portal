@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // Environment validation and Stripe client setup
 function validateEnvironment() {
-  const requiredVars = ['STRIPE_SECRET_KEY', 'JWT_SECRET', 'SENDGRID_API_KEY', 'SENDER_EMAIL', 'BASE_URL'];
+  const requiredVars = ['STRIPE_SECRET_KEY', 'JWT_SECRET', 'SENDGRID_API_KEY', 'SENDER_EMAIL', 'BASE_URL', 'ADMIN_PASSWORD'];
   const missing = requiredVars.filter(varName => !process.env[varName]);
   
   if (missing.length > 0) {
@@ -56,6 +56,33 @@ validateEnvironment();
 // Initialize Stripe and SendGrid
 const stripe = getStripeClient();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+// Security middleware - add security headers
+app.use((req, res, next) => {
+  // Prevent clickjacking
+  res.setHeader('X-Frame-Options', 'DENY');
+  
+  // Prevent MIME type sniffing
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  
+  // Enable XSS protection
+  res.setHeader('X-XSS-Protection', '1; mode=block');
+  
+  // Referrer policy
+  res.setHeader('Referrer-Policy', 'strict-origin-when-cross-origin');
+  
+  // Content Security Policy (basic)
+  res.setHeader('Content-Security-Policy', 
+    "default-src 'self'; " +
+    "script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+    "style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; " +
+    "font-src 'self' https://cdn.jsdelivr.net; " +
+    "img-src 'self' data:; " +
+    "connect-src 'self'"
+  );
+  
+  next();
+});
 
 // Middleware
 app.use(express.json());
@@ -363,137 +390,7 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
   }
 });
 
-// Admin Test Route - INTERNAL USE ONLY for testing with live customer IDs
-// Security: Multiple layers of protection
-app.get('/admin-test', async (req, res) => {
-  // Layer 1: Environment-aware feature flag check
-  const nodeEnv = process.env.NODE_ENV || 'development';
-  const adminTestEnabled = process.env.ADMIN_TEST_ENABLED;
-  
-  // Auto-disable in production unless explicitly enabled
-  if (nodeEnv === 'production' && adminTestEnabled !== 'true') {
-    return res.status(404).json({ error: 'Not found' });
-  }
-  
-  // In development, allow if not explicitly disabled
-  if (nodeEnv === 'development' && adminTestEnabled === 'false') {
-    return res.status(404).json({ error: 'Admin test route disabled' });
-  }
-  
-  // If no explicit setting in development, default to enabled for convenience
-  if (nodeEnv === 'development' && !adminTestEnabled) {
-    console.log('⚠️  ADMIN_TEST_ENABLED not set - defaulting to enabled in development');
-  }
-  
-  // Layer 2: Environment safety check (extra safety)
-  if (nodeEnv === 'development' && process.env.STRIPE_SECRET_KEY?.startsWith('sk_live_')) {
-    return res.status(403).json({ 
-      error: 'Security: Live Stripe key detected in development environment. Admin test route disabled.' 
-    });
-  }
-  
-  // Layer 3: Secret token authentication
-  const providedSecret = req.query.secret || req.headers['x-admin-secret'];
-  const expectedSecret = process.env.ADMIN_TEST_SECRET;
-  
-  if (!expectedSecret || expectedSecret.length < 32) {
-    return res.status(500).json({ 
-      error: 'Admin test route misconfigured. Secret must be at least 32 characters.' 
-    });
-  }
-  
-  if (providedSecret !== expectedSecret) {
-    return res.status(401).json({ error: 'Unauthorized: Invalid or missing admin secret' });
-  }
-  
-  // Layer 4: Customer ID validation
-  const customerId = req.query.customerId;
-  if (!customerId || !customerId.startsWith('cus_')) {
-    return res.status(400).json({ 
-      error: 'Missing or invalid customerId parameter. Must start with cus_' 
-    });
-  }
-  
-  try {
-    // Fetch customer to verify it exists
-    const customer = await stripe.customers.retrieve(customerId);
-    
-    // Fetch billing data using the same logic as dashboard
-    const [
-      invoicesResponse,
-      subscriptionsResponse,
-      paymentMethodsResponse,
-      upcomingInvoiceResponse,
-      customerPortalSession
-    ] = await Promise.allSettled([
-      stripe.invoices.list({ 
-        customer: customerId,
-        limit: 50,
-        expand: ['data.subscription']
-      }),
-      
-      stripe.subscriptions.list({
-        customer: customerId,
-        status: 'all',
-        expand: ['data.items.data.price.product']
-      }),
-      
-      stripe.paymentMethods.list({
-        customer: customerId,
-        type: 'card'
-      }),
-      
-      stripe.invoices.retrieveUpcoming({
-        customer: customerId
-      }).catch(() => null),
-      
-      stripe.billingPortal.sessions.create({
-        customer: customerId,
-        return_url: `${process.env.BASE_URL.replace(/\/$/, '')}/admin-test?secret=${providedSecret}&customerId=${customerId}`
-      })
-    ]);
-
-    // Extract data from settled promises
-    const allInvoices = invoicesResponse.status === 'fulfilled' ? invoicesResponse.value.data : [];
-    const subscriptions = subscriptionsResponse.status === 'fulfilled' ? subscriptionsResponse.value.data : [];
-    const paymentMethods = paymentMethodsResponse.status === 'fulfilled' ? paymentMethodsResponse.value.data : [];
-    const upcomingInvoice = upcomingInvoiceResponse.status === 'fulfilled' ? upcomingInvoiceResponse.value : null;
-    const customerPortalUrl = customerPortalSession.status === 'fulfilled' ? customerPortalSession.value.url : null;
-
-    // Filter out $0 invoices (trials, credits, etc.) to avoid user confusion
-    const invoices = allInvoices.filter(invoice => invoice.total > 0);
-
-    // Log the admin access for security audit
-    console.log(`🔧 ADMIN TEST ACCESS: Customer ${customerId} accessed at ${new Date().toISOString()}`);
-    
-    // Render the same dashboard template but with admin context
-    res.render('dashboard', { 
-      email: customer.email || `Admin Test (${customerId})`,
-      customer,
-      invoices,
-      subscriptions,
-      paymentMethods,
-      upcomingInvoice,
-      customerPortalUrl,
-      error: null,
-      isAdminTest: true
-    });
-    
-  } catch (error) {
-    console.error('Error in admin test route:', error);
-    
-    if (error.type === 'StripeInvalidRequestError' && error.code === 'resource_missing') {
-      return res.status(404).json({ 
-        error: `Customer ${customerId} not found in Stripe` 
-      });
-    }
-    
-    return res.status(500).json({ 
-      error: 'Failed to fetch customer billing data',
-      details: error.message 
-    });
-  }
-});
+// Legacy admin-test route removed - use the new Admin Portal at /admin instead
 
 // Download all invoices as ZIP
 app.get('/download-all-invoices', async (req, res) => {
@@ -501,41 +398,25 @@ app.get('/download-all-invoices', async (req, res) => {
     let customer = null;
     let email = null;
 
-    // Check if this is an admin test request
-    const providedSecret = req.query.secret || req.headers['x-admin-secret'];
-    const expectedSecret = process.env.ADMIN_TEST_SECRET;
-    const customerId = req.query.customerId;
-    
-    if (providedSecret && expectedSecret && providedSecret === expectedSecret && customerId) {
-      // Admin test authentication - get customer directly by ID
-      console.log(`🔧 ADMIN DOWNLOAD: Fetching invoices for customer ${customerId}`);
-      try {
-        customer = await stripe.customers.retrieve(customerId);
-        email = customer.email || `Admin Test (${customerId})`;
-      } catch (error) {
-        return res.status(404).json({ error: 'Customer not found in admin test mode' });
-      }
-    } else {
-      // Normal JWT authentication
-      const token = req.cookies.auth;
-      if (!token) {
-        return res.status(401).json({ error: 'Authentication required' });
-      }
+    // JWT authentication for both user and admin sessions
+    const token = req.cookies.auth;
+    if (!token) {
+      return res.status(401).json({ error: 'Authentication required' });
+    }
 
-      try {
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        email = decoded.email;
-        
-        // Look up Stripe customer by email
-        const customers = await stripe.customers.list({ email, limit: 1 });
-        customer = customers.data[0];
+    try {
+      const decoded = jwt.verify(token, process.env.JWT_SECRET);
+      email = decoded.email;
+      
+      // Look up Stripe customer by email
+      const customers = await stripe.customers.list({ email, limit: 1 });
+      customer = customers.data[0];
 
-        if (!customer) {
-          return res.status(404).json({ error: 'Customer not found' });
-        }
-      } catch (error) {
-        return res.status(401).json({ error: 'Invalid authentication token' });
+      if (!customer) {
+        return res.status(404).json({ error: 'Customer not found' });
       }
+    } catch (error) {
+      return res.status(401).json({ error: 'Invalid authentication token' });
     }
 
     // Get all invoices for this customer

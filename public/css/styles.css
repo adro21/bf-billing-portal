@@ -277,6 +277,23 @@ body {
     border-color: var(--color-blue-200);
 }
 
+/* Alert icon alignment */
+.alert .bi {
+    line-height: 1.5;
+    vertical-align: baseline;
+    margin-top: 0 !important;
+}
+
+/* Ensure alert content aligns properly */
+.alert.d-flex {
+    align-items: flex-start;
+}
+
+.alert.d-flex .bi {
+    margin-top: 0.125rem; /* Fine-tune icon alignment with first line of text */
+    flex-shrink: 0;
+}
+
 /* Badge styling */
 .badge {
     font-weight: 500;

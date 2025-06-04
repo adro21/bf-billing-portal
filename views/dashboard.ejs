@@ -55,8 +55,8 @@
 
         <!-- Error Alert -->
         <% if (error) { %>
-            <div class="alert alert-danger d-flex align-items-center mb-4" role="alert">
-                <i class="bi bi-exclamation-triangle-fill me-2"></i>
+            <div class="alert alert-danger border-0 d-flex mb-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill me-2 flex-shrink-0"></i>
                 <div><%= error %></div>
             </div>
         <% } %>
@@ -671,18 +671,8 @@
             }, 500);
             
             try {
-                // Build download URL - check if we're in admin test mode
-                let downloadUrl = '/download-all-invoices';
-                const urlParams = new URLSearchParams(window.location.search);
-                const isAdminTest = urlParams.has('secret') && urlParams.has('customerId');
-                
-                if (isAdminTest) {
-                    // Pass admin test credentials to download route
-                    downloadUrl += `?secret=${urlParams.get('secret')}&customerId=${urlParams.get('customerId')}`;
-                }
-                
                 // Trigger download
-                const response = await fetch(downloadUrl, {
+                const response = await fetch('/download-all-invoices', {
                     method: 'GET',
                     credentials: 'same-origin'
                 });

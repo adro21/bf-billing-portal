@@ -5,11 +5,12 @@ A secure web application that allows SaaS customers to view their Stripe billing
 ## 🚀 Features
 
 - **🔐 Magic Link Authentication**: Password-free login with JWT tokens
-- **📧 Email Integration**: SendGrid-powered magic link delivery
+- **📧 Email Integration**: SendGrid-powered magic link delivery  
 - **💳 Stripe Integration**: View billing history and download invoices
-- **🛡️ Security First**: HttpOnly cookies, rate limiting, token expiration
+- **👤 Admin Portal**: Secure admin interface for customer support
+- **🛡️ Security First**: HttpOnly cookies, rate limiting, security headers
 - **📱 Mobile Responsive**: Modern UI that works on all devices
-- **⚡ Production Ready**: Error handling, logging, and security best practices
+- **⚡ Production Ready**: Comprehensive security & monitoring features
 - **🎨 Modern UI**: Built with Bootstrap 5.3.6 for a beautiful, responsive interface
 
 ## 🏗️ Tech Stack
@@ -156,52 +157,57 @@ The application will be available at `http://localhost:3000` (or your configured
 
 The application provides these main routes:
 
+#### Customer Routes
 - `GET /` - Landing page with email form
 - `POST /send-magic-link` - Send magic link to user's email
 - `GET /verify?token=...` - Verify token and set auth cookie
 - `GET /dashboard` - Protected dashboard showing invoices
+- `GET /download-all-invoices` - Download all invoices as ZIP
 - `GET /logout` - Clear auth cookie and redirect
+
+#### Admin Routes
+- `GET /admin` - Admin login page
+- `POST /admin/login` - Admin authentication
+- `GET /admin/dashboard` - Admin dashboard with customer search
+- `POST /admin/lookup` - Search for customer by email
+- `GET /admin/view-customer/:customerId` - View customer's billing dashboard
+- `GET /admin/logout` - Clear admin session
 
 ## 🔒 Security Features
 
 - **JWT Expiration**: Magic links expire after 15 minutes
-- **HttpOnly Cookies**: Tokens are not accessible via JavaScript
+- **HttpOnly Cookies**: Tokens are not accessible via JavaScript  
 - **Rate Limiting**: 3 magic link requests per 15 minutes per IP
-- **Secure Headers**: SameSite=Lax, Secure in production
-- **Input Validation**: Email validation and sanitization
-- **Error Handling**: Graceful error pages and logging
+- **Security Headers**: Comprehensive headers (XSS, Clickjacking, CSP)
+- **Admin Security**: Password-protected admin portal with 2-hour sessions
+- **Input Validation**: Email validation and sanitization on all inputs
+- **Audit Logging**: All admin access and authentication attempts logged
+- **Environment Safety**: Automatic validation prevents test/live key mixups
 
 ## 🧪 Testing
 
-### Testing with Live Customer Data
+### Admin Portal for Customer Access
 
-**🔧 Admin Test Route** - For internal testing with live customer IDs without requiring email authentication:
+**🎯 Admin Portal** - Secure interface for accessing customer billing dashboards:
 
 ```bash
-# Access format
-/admin-test?secret=YOUR_ADMIN_SECRET&customerId=cus_ABC123
+# Access the admin portal
+http://localhost:3000/admin
 ```
 
-**Security Features:**
-- ✅ Requires `ADMIN_TEST_ENABLED=true` in environment
-- ✅ Requires secret token authentication
-- ✅ Validates customer ID format (must start with `cus_`)
-- ✅ Logs all admin access for audit trail
-- ✅ Automatically disabled if environment/key mismatch detected
-- ✅ Can be completely disabled for production
+**Features:**
+- ✅ Password-protected login with session management
+- ✅ Search customers by email address
+- ✅ View full billing dashboards for any customer
+- ✅ All admin access is logged for security audit
+- ✅ 2-hour session timeout for security
+- ✅ Works in both development and production
 
-**Usage Example:**
-```bash
-# 1. Ensure admin test is enabled in your .env
-ADMIN_TEST_ENABLED=true
-ADMIN_TEST_SECRET=your_32_character_minimum_secret
-
-# 2. Access the route with a live customer ID
-curl "http://localhost:3000/admin-test?secret=your_32_character_minimum_secret&customerId=cus_ABC123"
-```
-
-**Security Warning:** 
-> 🚨 **Always disable this route in production** by setting `ADMIN_TEST_ENABLED=false` unless actively needed for testing.
+**Usage:**
+1. **Go to**: `http://localhost:3000/admin`
+2. **Enter admin password** (set via `ADMIN_PASSWORD` environment variable)
+3. **Search by email** - enter any customer email from your Stripe account
+4. **View dashboard** - click "View Billing Dashboard" to see their full billing info
 
 ### Testing Magic Links Locally
 
@@ -272,14 +278,14 @@ When deploying to production:
 3. **✅ Testing**
    - Test magic link flow with real email
    - Verify Stripe integration with test customer
-   - Confirm admin test route is disabled
+   - Test admin portal with secure password
 
 **Railway Environment Variables:**
 ```bash
 NODE_ENV=production
 STRIPE_SECRET_KEY=sk_live_your_live_key
 BASE_URL=https://yourdomain.railway.app
-ADMIN_TEST_ENABLED=false
+ADMIN_PASSWORD=your_secure_admin_password
 # ... other required variables
 ```
 

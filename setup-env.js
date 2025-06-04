@@ -71,11 +71,11 @@ function printEnvironmentGuide() {
   console.log('   • Environment-aware cookie security settings');
   console.log('   • All sensitive data properly excluded from git');
   console.log('');
-  console.log('🧪 ADMIN TEST ROUTE USAGE:');
-  console.log('   URL: /admin-test?secret=YOUR_ADMIN_SECRET&customerId=cus_ABC123');
-  console.log('   • Only enabled when ADMIN_TEST_ENABLED=true');
-  console.log('   • Requires ADMIN_TEST_SECRET for access');
-  console.log('   • Use live customer IDs to test billing data');
-  console.log('   • Automatically disabled if environment mismatch detected');
+  console.log('🎯 ADMIN PORTAL USAGE:');
+  console.log('   URL: /admin');
+  console.log('   • Password-protected login with secure sessions');
+  console.log('   • Search customers by email address');
+  console.log('   • View full billing dashboards for any customer');
+  console.log('   • All admin access is logged for security audit');
   console.log('');
 } 
