@@ -509,6 +509,7 @@ app.get('/download-all-invoices', authenticateToken, async (req, res) => {
     for (const invoice of validInvoices) {
       try {
         console.log(`Downloading invoice ${invoice.number || invoice.id}...`);
+        console.log(`PDF URL: ${invoice.invoice_pdf}`);
         
         const pdfResponse = await fetch(invoice.invoice_pdf);
         if (!pdfResponse.ok) {
@@ -517,8 +518,28 @@ app.get('/download-all-invoices', authenticateToken, async (req, res) => {
           continue;
         }
         
+        console.log(`Response headers for ${invoice.number || invoice.id}:`, {
+          'content-type': pdfResponse.headers.get('content-type'),
+          'content-length': pdfResponse.headers.get('content-length')
+        });
+        
         const pdfArrayBuffer = await pdfResponse.arrayBuffer();
+        console.log(`Downloaded ${pdfArrayBuffer.byteLength} bytes for invoice ${invoice.number || invoice.id}`);
+        
+        if (pdfArrayBuffer.byteLength === 0) {
+          console.error(`Empty PDF data for invoice ${invoice.number || invoice.id}`);
+          errorCount++;
+          continue;
+        }
+        
         const pdfBuffer = Buffer.from(pdfArrayBuffer);
+        
+        // Verify it's actually a PDF
+        if (pdfBuffer.length < 4 || pdfBuffer.toString('ascii', 0, 4) !== '%PDF') {
+          console.error(`Invalid PDF data for invoice ${invoice.number || invoice.id} - first 20 bytes:`, pdfBuffer.slice(0, 20));
+          errorCount++;
+          continue;
+        }
         
         // Create filename
         const date = new Date(invoice.created * 1000);
@@ -527,12 +548,14 @@ app.get('/download-all-invoices', authenticateToken, async (req, res) => {
         const amount = (invoice.total / 100).toFixed(2);
         
         const filename = `${dateStr}_Invoice_${invoiceNumber}_$${amount}.pdf`;
+        console.log(`Adding to ZIP: ${filename} (${pdfBuffer.length} bytes)`);
         
         zip.file(filename, pdfBuffer);
         successCount++;
         
       } catch (error) {
         console.error(`Error processing invoice ${invoice.number || invoice.id}:`, error.message);
+        console.error(`Error stack:`, error.stack);
         errorCount++;
       }
     }
@@ -543,11 +566,21 @@ app.get('/download-all-invoices', authenticateToken, async (req, res) => {
 
     // Generate ZIP file
     console.log(`Generating ZIP with ${successCount} invoices...`);
+    console.log(`ZIP contents:`, Object.keys(zip.files));
+    
     const zipBuffer = await zip.generateAsync({ 
       type: 'nodebuffer',
       compression: 'DEFLATE',
       compressionOptions: { level: 6 }
     });
+    
+    console.log(`Generated ZIP buffer size: ${zipBuffer.length} bytes`);
+    
+    // Verify ZIP file starts with correct magic bytes
+    if (zipBuffer.length < 4 || (zipBuffer[0] !== 0x50 || zipBuffer[1] !== 0x4B)) {
+      console.error('Generated ZIP file has invalid magic bytes:', zipBuffer.slice(0, 10));
+      return res.status(500).json({ error: 'Failed to generate valid ZIP file' });
+    }
 
     // Send ZIP file
     const customerName = customer.name || email.split('@')[0];
@@ -560,6 +593,7 @@ app.get('/download-all-invoices', authenticateToken, async (req, res) => {
     });
 
     console.log(`✅ ZIP download complete: ${successCount} invoices, ${errorCount} errors`);
+    console.log(`Sending ZIP: ${zipFilename} (${zipBuffer.length} bytes)`);
     res.send(zipBuffer);
 
   } catch (error) {

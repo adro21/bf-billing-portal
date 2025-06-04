@@ -713,6 +713,10 @@
                 
                 // Show success state
                 setTimeout(() => {
+                    // Hide spinner
+                    const spinnerContainer = document.querySelector('.spinner-border').parentElement;
+                    spinnerContainer.style.display = 'none';
+                    
                     status.innerHTML = '<i class="bi bi-check-circle-fill text-success me-2"></i>Download Complete!';
                     subtext.textContent = 'Your invoice archive has been downloaded successfully.';
                     footer.style.display = 'block';
@@ -721,6 +725,10 @@
             } catch (error) {
                 clearInterval(progressInterval);
                 console.error('Download error:', error);
+                
+                // Hide spinner
+                const spinnerContainer = document.querySelector('.spinner-border').parentElement;
+                spinnerContainer.style.display = 'none';
                 
                 // Show error state
                 progressBar.classList.remove('bg-primary');
