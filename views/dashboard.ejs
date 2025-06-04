@@ -403,12 +403,23 @@
                                                         day: 'numeric' 
                                                     }) %>
                                                 </span>
-                                                <% if (invoice.description) { %>
+                                                <% 
+                                                let productName = null;
+                                                if (invoice.lines && invoice.lines.data && invoice.lines.data.length > 0) {
+                                                    const lineItem = invoice.lines.data[0];
+                                                    if (lineItem.price && lineItem.price.product && lineItem.price.product.name) {
+                                                        productName = lineItem.price.product.name;
+                                                    } else if (lineItem.description) {
+                                                        productName = lineItem.description;
+                                                    }
+                                                }
+                                                %>
+                                                <% if (productName) { %>
                                                     <small class="text-slate-500">
-                                                        <%= invoice.description.length > 50 ? invoice.description.substring(0, 50) + '...' : invoice.description %>
+                                                        <%= productName.length > 50 ? productName.substring(0, 50) + '...' : productName %>
                                                     </small>
                                                 <% } else { %>
-                                                    <small class="text-slate-400">No description</small>
+                                                    <small class="text-slate-400">No product info</small>
                                                 <% } %>
                                             </div>
                                         </div>
@@ -476,11 +487,22 @@
                                             </span>
                                         </div>
                                         
-                                        <% if (invoice.description) { %>
+                                        <% 
+                                        let mobileProductName = null;
+                                        if (invoice.lines && invoice.lines.data && invoice.lines.data.length > 0) {
+                                            const lineItem = invoice.lines.data[0];
+                                            if (lineItem.price && lineItem.price.product && lineItem.price.product.name) {
+                                                mobileProductName = lineItem.price.product.name;
+                                            } else if (lineItem.description) {
+                                                mobileProductName = lineItem.description;
+                                            }
+                                        }
+                                        %>
+                                        <% if (mobileProductName) { %>
                                             <div class="mobile-detail-item mobile-description-item">
-                                                <span class="mobile-detail-label">Description</span>
+                                                <span class="mobile-detail-label">Product</span>
                                                 <span class="mobile-detail-value mobile-description-value">
-                                                    <%= invoice.description %>
+                                                    <%= mobileProductName %>
                                                 </span>
                                             </div>
                                         <% } %>
