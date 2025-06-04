@@ -5,6 +5,8 @@ const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
 const sgMail = require('@sendgrid/mail');
 const Stripe = require('stripe');
+const JSZip = require('jszip');
+const fetch = require('node-fetch');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -464,6 +466,105 @@ app.get('/admin-test', async (req, res) => {
     
     return res.status(500).json({ 
       error: 'Failed to fetch customer billing data',
+      details: error.message 
+    });
+  }
+});
+
+// Download all invoices as ZIP
+app.get('/download-all-invoices', authenticateToken, async (req, res) => {
+  try {
+    const { email } = req.user;
+
+    // Look up Stripe customer
+    const customers = await stripe.customers.list({ email, limit: 1 });
+    const customer = customers.data[0];
+
+    if (!customer) {
+      return res.status(404).json({ error: 'Customer not found' });
+    }
+
+    // Get all invoices for this customer
+    const allInvoices = await stripe.invoices.list({ 
+      customer: customer.id,
+      limit: 100, // Stripe's max, would need pagination for more
+      expand: ['data.lines']
+    });
+
+    // Filter out $0 invoices and invoices without PDFs
+    const validInvoices = allInvoices.data.filter(invoice => 
+      invoice.total > 0 && invoice.invoice_pdf
+    );
+
+    if (validInvoices.length === 0) {
+      return res.status(404).json({ error: 'No downloadable invoices found' });
+    }
+
+    // Create ZIP file
+    const zip = new JSZip();
+    let successCount = 0;
+    let errorCount = 0;
+
+    // Download each PDF and add to ZIP
+    for (const invoice of validInvoices) {
+      try {
+        console.log(`Downloading invoice ${invoice.number || invoice.id}...`);
+        
+        const pdfResponse = await fetch(invoice.invoice_pdf);
+        if (!pdfResponse.ok) {
+          console.error(`Failed to download invoice ${invoice.number || invoice.id}: ${pdfResponse.statusText}`);
+          errorCount++;
+          continue;
+        }
+        
+        const pdfBuffer = await pdfResponse.buffer();
+        
+        // Create filename
+        const date = new Date(invoice.created * 1000);
+        const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+        const invoiceNumber = invoice.number || invoice.id.substring(3, 10); // Remove 'in_' prefix if no number
+        const amount = (invoice.total / 100).toFixed(2);
+        
+        const filename = `${dateStr}_Invoice_${invoiceNumber}_$${amount}.pdf`;
+        
+        zip.file(filename, pdfBuffer);
+        successCount++;
+        
+      } catch (error) {
+        console.error(`Error processing invoice ${invoice.number || invoice.id}:`, error.message);
+        errorCount++;
+      }
+    }
+
+    if (successCount === 0) {
+      return res.status(500).json({ error: 'Failed to download any invoices' });
+    }
+
+    // Generate ZIP file
+    console.log(`Generating ZIP with ${successCount} invoices...`);
+    const zipBuffer = await zip.generateAsync({ 
+      type: 'nodebuffer',
+      compression: 'DEFLATE',
+      compressionOptions: { level: 6 }
+    });
+
+    // Send ZIP file
+    const customerName = customer.name || email.split('@')[0];
+    const zipFilename = `${customerName}_Invoices_${new Date().toISOString().split('T')[0]}.zip`;
+    
+    res.set({
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${zipFilename}"`,
+      'Content-Length': zipBuffer.length
+    });
+
+    console.log(`✅ ZIP download complete: ${successCount} invoices, ${errorCount} errors`);
+    res.send(zipBuffer);
+
+  } catch (error) {
+    console.error('Error creating invoice ZIP:', error);
+    res.status(500).json({ 
+      error: 'Failed to create invoice archive',
       details: error.message 
     });
   }
