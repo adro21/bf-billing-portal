@@ -766,7 +766,7 @@ footer {
     
     /* Logo sizing for mobile */
     .card-body img[alt*="Logo"] {
-        max-width: 100px !important;
+        max-width: 150px !important;
         height: auto !important;
     }
     
