@@ -200,7 +200,7 @@ body {
 @media (max-width: 576px) {
     .navbar-brand img {
         height: 28px;
-        max-height: 28px;
+        max-height: 35px;
     }
     
     .navbar-brand {
@@ -507,6 +507,52 @@ footer {
     color: var(--color-slate-500) !important;
 }
 
+/* Mobile footer improvements */
+@media (max-width: 576px) {
+    footer {
+        padding: 1rem 0 !important;
+    }
+    
+    footer .container {
+        padding: 0 1rem !important;
+    }
+    
+    footer small {
+        font-size: 0.75rem !important;
+        line-height: 1.4 !important;
+        display: block !important;
+    }
+    
+    /* Stack footer content vertically on mobile */
+    footer .row {
+        flex-direction: column !important;
+        gap: 0.5rem !important;
+    }
+    
+    footer .col-md-6 {
+        text-align: center !important;
+    }
+    
+    /* Adjust icon spacing for mobile */
+    footer .d-flex {
+        justify-content: center !important;
+    }
+    
+    footer .bi-shield-check {
+        font-size: 0.875rem !important;
+    }
+}
+
+@media (max-width: 375px) {
+    footer {
+        padding: 0.75rem 0 !important;
+    }
+    
+    footer small {
+        font-size: 0.7rem !important;
+    }
+}
+
 /* Mobile dropdown fixes */
 @media (max-width: 991.98px) {
     .navbar-nav .dropdown-menu {
@@ -692,7 +738,44 @@ footer {
     }
     
     .card-body {
-        padding: 0.5rem !important;
+        padding: 2rem 1.5rem !important;
+    }
+    
+    /* Logo sizing for mobile */
+    .card-body img[alt*="Logo"] {
+        max-width: 100px !important;
+        height: auto !important;
+    }
+    
+    /* Better spacing for mobile login */
+    .card-body .text-center.mb-4 {
+        margin-bottom: 2rem !important;
+    }
+    
+    /* Form spacing adjustments */
+    .card-body .mb-4 {
+        margin-bottom: 1.5rem !important;
+    }
+    
+    /* Button padding for mobile */
+    .card-body .btn.w-100 {
+        padding: 0.875rem 1rem !important;
+        font-size: 1rem !important;
+    }
+}
+
+/* Extra small screens (very small phones) */
+@media (max-width: 375px) {
+    .card-body {
+        padding: 1.5rem 1rem !important;
+    }
+    
+    .card-body img[alt*="Logo"] {
+        max-width: 80px !important;
+    }
+    
+    .card-body .h4 {
+        font-size: 1.1rem !important;
     }
 }
 
