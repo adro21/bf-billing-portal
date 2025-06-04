@@ -188,6 +188,9 @@
                                                     style: 'currency', 
                                                     currency: upcomingInvoice.currency.toUpperCase() 
                                                 }) %>
+                                                <% if (upcomingInvoice.tax && upcomingInvoice.tax > 0) { %>
+                                                    <small class="text-slate-500 fw-normal" style="font-size: 0.7rem; margin-left: 0.25rem;">incl. tax</small>
+                                                <% } %>
                                             </h5>
                                             <div class="text-slate-600">
                                                 Due <%= new Date(upcomingInvoice.period_end * 1000).toLocaleDateString('en-US', { 
