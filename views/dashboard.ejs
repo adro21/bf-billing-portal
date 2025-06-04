@@ -492,8 +492,8 @@
                         <% if (invoices.length > 1) { %>
                             <button class="btn btn-outline-primary btn-sm d-flex align-items-center" onclick="downloadAllInvoices()">
                                 <i class="bi bi-download me-1"></i>
-                                <span class="d-none d-sm-inline">Download All</span>
-                                <span class="d-inline d-sm-none">All</span>
+                                <span class="d-none d-sm-inline">Download All (<%= invoices.length %>)</span>
+                                <span class="d-inline d-sm-none">All (<%= invoices.length %>)</span>
                             </button>
                         <% } %>
                     </div>
