@@ -103,97 +103,129 @@
                             <div class="mt-5 pt-4 border-top">
                                 <% customers.forEach(function(customer, index) { %>
                                     <div class="<%= index > 0 ? 'mt-4' : '' %>">
-                                        <div class="bg-green-50 rounded-3 p-4 position-relative">
-                                            <% if (index === 0 && customers.length > 1) { %>
-                                                <div class="position-absolute top-0 end-0 mt-2 me-2">
-                                                    <span class="badge bg-primary rounded-pill" style="font-size: 0.7rem;">Recommended</span>
-                                                </div>
-                                            <% } %>
-                                            
-                                            <div class="d-flex justify-content-between align-items-start mb-3">
+                                        <div class="bg-white rounded-3 p-4 border border-slate-200 shadow-sm">
+                                            <!-- Header with Title and Badges -->
+                                            <div class="d-flex justify-content-between align-items-start mb-4">
                                                 <div>
-                                                    <h6 class="fw-bold text-green-800 mb-1">
-                                                        <% if (customers.length > 1) { %>
-                                                            Customer <%= index + 1 %> of <%= customers.length %>
-                                                        <% } else { %>
-                                                            Customer Found
+                                                    <div class="d-flex align-items-center gap-2 mb-2">
+                                                        <h6 class="fw-bold text-slate-900 mb-0">
+                                                            <% if (customers.length > 1) { %>
+                                                                Customer <%= index + 1 %> of <%= customers.length %>
+                                                            <% } else { %>
+                                                                Customer Found
+                                                            <% } %>
+                                                        </h6>
+                                                        <% if (index === 0 && customers.length > 1) { %>
+                                                            <span class="badge bg-primary text-white rounded-pill" style="font-size: 0.7rem;">
+                                                                <i class="bi bi-star-fill me-1"></i>Recommended
+                                                            </span>
                                                         <% } %>
-                                                    </h6>
-                                                    <small class="text-green-600">
+                                                    </div>
+                                                    <p class="text-slate-600 mb-0" style="font-size: 0.9rem;">
                                                         <%= customer.summary.activeSubscriptions > 0 ? 'Has active subscriptions' : 
                                                             customer.summary.paidInvoices > 0 ? 'Has billing history' : 
                                                             'Limited activity' %>
-                                                    </small>
+                                                    </p>
                                                 </div>
                                                 <div class="d-flex align-items-center gap-2">
-                                                    <div class="bg-green-500 rounded-circle p-1" style="width: 1.25rem; height: 1.25rem;">
-                                                        <i class="bi bi-person-check text-white" style="font-size: 0.7rem;"></i>
-                                                    </div>
                                                     <% if (customer.summary.activeSubscriptions > 0) { %>
-                                                        <span class="badge bg-success rounded-pill">Active</span>
+                                                        <span class="badge bg-success text-white rounded-pill px-3 py-2">
+                                                            <i class="bi bi-check-circle me-1"></i>Active
+                                                        </span>
                                                     <% } else if (customer.summary.paidInvoices > 0) { %>
-                                                        <span class="badge bg-info rounded-pill">Past Customer</span>
+                                                        <span class="badge bg-info text-white rounded-pill px-3 py-2">
+                                                            <i class="bi bi-clock-history me-1"></i>Past Customer
+                                                        </span>
                                                     <% } else { %>
-                                                        <span class="badge bg-secondary rounded-pill">Limited Activity</span>
+                                                        <span class="badge bg-secondary text-white rounded-pill px-3 py-2">
+                                                            <i class="bi bi-dash-circle me-1"></i>Limited Activity
+                                                        </span>
                                                     <% } %>
                                                 </div>
                                             </div>
                                             
-                                            <div class="row g-3 mb-3">
+                                            <!-- Customer Details Grid -->
+                                            <div class="row g-3 mb-4">
                                                 <div class="col-md-6">
-                                                    <div class="d-flex flex-column">
-                                                        <span class="text-green-700 fw-bold">Email</span>
-                                                        <span class="text-green-800"><%= customer.email %></span>
+                                                    <div class="bg-slate-50 rounded-2 p-3">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <i class="bi bi-envelope text-slate-500 me-2"></i>
+                                                            <span class="text-slate-600 fw-medium" style="font-size: 0.85rem;">Email Address</span>
+                                                        </div>
+                                                        <div class="text-slate-900 fw-medium"><%= customer.email %></div>
                                                     </div>
                                                 </div>
                                                 <div class="col-md-6">
-                                                    <div class="d-flex flex-column">
-                                                        <span class="text-green-700 fw-bold">Customer ID</span>
-                                                        <span class="text-green-800 font-monospace small"><%= customer.id %></span>
+                                                    <div class="bg-slate-50 rounded-2 p-3">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <i class="bi bi-hash text-slate-500 me-2"></i>
+                                                            <span class="text-slate-600 fw-medium" style="font-size: 0.85rem;">Customer ID</span>
+                                                        </div>
+                                                        <div class="text-slate-900 font-monospace" style="font-size: 0.9rem;"><%= customer.id %></div>
                                                     </div>
                                                 </div>
                                                 <% if (customer.name) { %>
                                                     <div class="col-md-6">
-                                                        <div class="d-flex flex-column">
-                                                            <span class="text-green-700 fw-bold">Name</span>
-                                                            <span class="text-green-800"><%= customer.name %></span>
+                                                        <div class="bg-slate-50 rounded-2 p-3">
+                                                            <div class="d-flex align-items-center mb-2">
+                                                                <i class="bi bi-person text-slate-500 me-2"></i>
+                                                                <span class="text-slate-600 fw-medium" style="font-size: 0.85rem;">Name</span>
+                                                            </div>
+                                                            <div class="text-slate-900 fw-medium"><%= customer.name %></div>
                                                         </div>
                                                     </div>
                                                 <% } %>
                                                 <div class="col-md-6">
-                                                    <div class="d-flex flex-column">
-                                                        <span class="text-green-700 fw-bold">Created</span>
-                                                        <span class="text-green-800">
+                                                    <div class="bg-slate-50 rounded-2 p-3">
+                                                        <div class="d-flex align-items-center mb-2">
+                                                            <i class="bi bi-calendar-plus text-slate-500 me-2"></i>
+                                                            <span class="text-slate-600 fw-medium" style="font-size: 0.85rem;">Created</span>
+                                                        </div>
+                                                        <div class="text-slate-900 fw-medium">
                                                             <%= new Date(customer.created * 1000).toLocaleDateString('en-US', { 
                                                                 year: 'numeric', 
-                                                                month: 'long', 
+                                                                month: 'short', 
                                                                 day: 'numeric' 
                                                             }) %>
-                                                        </span>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <!-- Activity Summary -->
-                                            <div class="mb-3">
-                                                <div class="bg-white rounded-2 p-3">
-                                                    <h6 class="text-slate-700 fw-bold mb-2" style="font-size: 0.9rem;">Activity Summary</h6>
-                                                    <div class="row g-2 small">
-                                                        <div class="col-6 col-sm-3">
-                                                            <div class="text-center">
-                                                                <div class="fw-bold text-slate-900"><%= customer.summary.activeSubscriptions %></div>
-                                                                <div class="text-slate-500" style="font-size: 0.8rem;">Active Subs</div>
+                                            <!-- Activity Summary - Improved Layout -->
+                                            <div class="mb-4">
+                                                <div class="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-3 p-4 border border-blue-100">
+                                                    <div class="d-flex align-items-center mb-3">
+                                                        <div class="bg-blue-100 rounded-circle p-2 me-3">
+                                                            <i class="bi bi-graph-up text-blue-600"></i>
+                                                        </div>
+                                                        <h6 class="text-slate-800 fw-bold mb-0">Activity Overview</h6>
+                                                    </div>
+                                                    
+                                                    <div class="row g-3">
+                                                        <div class="col-6 col-lg-3">
+                                                            <div class="bg-white rounded-2 p-3 text-center border border-slate-100 h-100 d-flex flex-column justify-content-center">
+                                                                <div class="text-primary fw-bold mb-1" style="font-size: 1.25rem; line-height: 1.2;">
+                                                                    <%= customer.summary.activeSubscriptions %>
+                                                                </div>
+                                                                <div class="text-slate-600 fw-medium" style="font-size: 0.8rem; line-height: 1.3;">
+                                                                    Active Subscriptions
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-6 col-sm-3">
-                                                            <div class="text-center">
-                                                                <div class="fw-bold text-slate-900"><%= customer.summary.paidInvoices %></div>
-                                                                <div class="text-slate-500" style="font-size: 0.8rem;">Paid Invoices</div>
+                                                        <div class="col-6 col-lg-3">
+                                                            <div class="bg-white rounded-2 p-3 text-center border border-slate-100 h-100 d-flex flex-column justify-content-center">
+                                                                <div class="text-success fw-bold mb-1" style="font-size: 1.25rem; line-height: 1.2;">
+                                                                    <%= customer.summary.paidInvoices %>
+                                                                </div>
+                                                                <div class="text-slate-600 fw-medium" style="font-size: 0.8rem; line-height: 1.3;">
+                                                                    Paid Invoices
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-6 col-sm-3">
-                                                            <div class="text-center">
-                                                                <div class="fw-bold text-slate-900">
+                                                        <div class="col-6 col-lg-3">
+                                                            <div class="bg-white rounded-2 p-3 text-center border border-slate-100 h-100 d-flex flex-column justify-content-center">
+                                                                <div class="text-dark-pink fw-bold mb-1" style="font-size: 1.25rem; line-height: 1.2;">
                                                                     <%= (customer.summary.totalPaid / 100).toLocaleString('en-US', { 
                                                                         style: 'currency', 
                                                                         currency: 'USD',
@@ -201,27 +233,32 @@
                                                                         maximumFractionDigits: 0
                                                                     }) %>
                                                                 </div>
-                                                                <div class="text-slate-500" style="font-size: 0.8rem;">Total Paid</div>
+                                                                <div class="text-slate-600 fw-medium" style="font-size: 0.8rem; line-height: 1.3;">
+                                                                    Total Revenue
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                        <div class="col-6 col-sm-3">
-                                                            <div class="text-center">
-                                                                <div class="fw-bold text-slate-900">
+                                                        <div class="col-6 col-lg-3">
+                                                            <div class="bg-white rounded-2 p-3 text-center border border-slate-100 h-100 d-flex flex-column justify-content-center">
+                                                                <div class="text-slate-700 fw-bold mb-1" style="font-size: 1.25rem; line-height: 1.2;">
                                                                     <% if (customer.summary.lastInvoiceDate) { %>
                                                                         <%= new Date(customer.summary.lastInvoiceDate * 1000).toLocaleDateString('en-US', { month: 'short', year: '2-digit' }) %>
                                                                     <% } else { %>
-                                                                        None
+                                                                        —
                                                                     <% } %>
                                                                 </div>
-                                                                <div class="text-slate-500" style="font-size: 0.8rem;">Last Invoice</div>
+                                                                <div class="text-slate-600 fw-medium" style="font-size: 0.8rem; line-height: 1.3;">
+                                                                    Last Invoice
+                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
                                                 </div>
                                             </div>
 
-                                            <div class="d-grid gap-2 d-md-flex justify-content-md-end">
-                                                <a href="/admin/view-customer/<%= customer.id %>" class="btn btn-success d-flex align-items-center">
+                                            <!-- Action Button -->
+                                            <div class="d-flex justify-content-end">
+                                                <a href="/admin/view-customer/<%= customer.id %>" class="btn btn-primary d-flex align-items-center px-4 py-2">
                                                     <i class="bi bi-eye me-2"></i>
                                                     View Billing Dashboard
                                                 </a>

@@ -830,8 +830,24 @@ footer {
     background: linear-gradient(to right, var(--color-blue-50), #eef2ff);
 }
 
+.from-blue-50 {
+    background: linear-gradient(to right, var(--color-blue-50), #dbeafe);
+}
+
+.to-indigo-50 {
+    background: linear-gradient(to right, var(--color-blue-50), #eef2ff);
+}
+
 .border-blue-200 {
     border-color: #bfdbfe !important;
+}
+
+.border-blue-100 {
+    border-color: #dbeafe !important;
+}
+
+.border-slate-100 {
+    border-color: #f1f5f9 !important;
 }
 
 /* Card enhancements */
