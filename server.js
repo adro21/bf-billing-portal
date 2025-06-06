@@ -57,6 +57,156 @@ validateEnvironment();
 const stripe = getStripeClient();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
+// Helper function to intelligently select the best customer for an email
+async function selectBestCustomer(email) {
+  // Get ALL customers with this email (remove limit: 1)
+  const allCustomers = await stripe.customers.list({ 
+    email: email.toLowerCase().trim(),
+    limit: 100 // Get up to 100 customers with this email
+  });
+
+  if (allCustomers.data.length === 0) {
+    return null;
+  }
+
+  if (allCustomers.data.length === 1) {
+    return allCustomers.data[0];
+  }
+
+  console.log(`🔍 Found ${allCustomers.data.length} customers for email ${email}, selecting best one...`);
+
+  // Score each customer based on activity and billing data
+  const customerScores = await Promise.all(
+    allCustomers.data.map(async (customer) => {
+      let score = 0;
+      
+      try {
+        // Check for active subscriptions (high priority)
+        const subscriptions = await stripe.subscriptions.list({
+          customer: customer.id,
+          status: 'active',
+          limit: 1
+        });
+        if (subscriptions.data.length > 0) {
+          score += 100; // Very high score for active subscriptions
+        }
+
+        // Check for paid invoices (medium-high priority)
+        const paidInvoices = await stripe.invoices.list({
+          customer: customer.id,
+          status: 'paid',
+          limit: 10
+        });
+        score += paidInvoices.data.length * 10; // 10 points per paid invoice
+
+        // Check for total invoice amount (medium priority)
+        const allInvoices = await stripe.invoices.list({
+          customer: customer.id,
+          limit: 20
+        });
+        const totalAmount = allInvoices.data.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+        score += Math.min(totalAmount / 100, 50); // Up to 50 points based on total amount
+
+        // Check for payment methods (low-medium priority)
+        const paymentMethods = await stripe.paymentMethods.list({
+          customer: customer.id,
+          type: 'card',
+          limit: 1
+        });
+        if (paymentMethods.data.length > 0) {
+          score += 20; // 20 points for having payment methods
+        }
+
+        // Recency bonus (more recent customers get slight bonus)
+        const daysSinceCreated = (Date.now() / 1000 - customer.created) / (24 * 60 * 60);
+        if (daysSinceCreated < 30) {
+          score += 5; // Small bonus for recent customers
+        }
+
+        return { customer, score };
+      } catch (error) {
+        console.error(`Error scoring customer ${customer.id}:`, error);
+        return { customer, score: 0 };
+      }
+    })
+  );
+
+  // Sort by score (highest first) and return the best customer
+  customerScores.sort((a, b) => b.score - a.score);
+  
+  const bestCustomer = customerScores[0];
+  console.log(`✅ Selected customer ${bestCustomer.customer.id} with score ${bestCustomer.score} out of ${allCustomers.data.length} options`);
+  
+  return bestCustomer.customer;
+}
+
+// Helper function to get ALL customers for admin lookup with summary data
+async function getAllCustomersWithSummary(email) {
+  const allCustomers = await stripe.customers.list({ 
+    email: email.toLowerCase().trim(),
+    limit: 100
+  });
+
+  if (allCustomers.data.length === 0) {
+    return [];
+  }
+
+  // Get summary data for each customer
+  const customersWithSummary = await Promise.all(
+    allCustomers.data.map(async (customer) => {
+      try {
+        const [subscriptions, invoices, paymentMethods] = await Promise.allSettled([
+          stripe.subscriptions.list({ customer: customer.id, limit: 5 }),
+          stripe.invoices.list({ customer: customer.id, limit: 10 }),
+          stripe.paymentMethods.list({ customer: customer.id, type: 'card', limit: 1 })
+        ]);
+
+        const subs = subscriptions.status === 'fulfilled' ? subscriptions.value.data : [];
+        const invs = invoices.status === 'fulfilled' ? invoices.value.data : [];
+        const pms = paymentMethods.status === 'fulfilled' ? paymentMethods.value.data : [];
+
+        const activeSubscriptions = subs.filter(sub => sub.status === 'active').length;
+        const paidInvoices = invs.filter(inv => inv.status === 'paid').length;
+        const totalPaid = invs.reduce((sum, inv) => sum + (inv.amount_paid || 0), 0);
+
+        return {
+          ...customer,
+          summary: {
+            activeSubscriptions,
+            totalInvoices: invs.length,
+            paidInvoices,
+            totalPaid,
+            hasPaymentMethods: pms.length > 0,
+            lastInvoiceDate: invs.length > 0 ? invs[0].created : null
+          }
+        };
+      } catch (error) {
+        console.error(`Error getting summary for customer ${customer.id}:`, error);
+        return {
+          ...customer,
+          summary: {
+            activeSubscriptions: 0,
+            totalInvoices: 0,
+            paidInvoices: 0,
+            totalPaid: 0,
+            hasPaymentMethods: false,
+            lastInvoiceDate: null
+          }
+        };
+      }
+    })
+  );
+
+  // Sort by activity level (most active first)
+  customersWithSummary.sort((a, b) => {
+    const scoreA = (a.summary.activeSubscriptions * 100) + (a.summary.paidInvoices * 10) + (a.summary.totalPaid / 1000);
+    const scoreB = (b.summary.activeSubscriptions * 100) + (b.summary.paidInvoices * 10) + (b.summary.totalPaid / 1000);
+    return scoreB - scoreA;
+  });
+
+  return customersWithSummary;
+}
+
 // Security middleware - add security headers
 app.use((req, res, next) => {
   // Prevent clickjacking
@@ -300,9 +450,8 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
   try {
     const { email } = req.user;
 
-    // Look up Stripe customer
-    const customers = await stripe.customers.list({ email, limit: 1 });
-    const customer = customers.data[0];
+    // Use intelligent customer selection to handle multiple customers with same email
+    const customer = await selectBestCustomer(email);
 
     if (!customer) {
       return res.render('dashboard', { 
@@ -409,9 +558,8 @@ app.get('/download-all-invoices', async (req, res) => {
         const decoded = jwt.verify(authToken, process.env.JWT_SECRET);
         email = decoded.email;
         
-        // Look up Stripe customer by email
-        const customers = await stripe.customers.list({ email, limit: 1 });
-        customer = customers.data[0];
+        // Use intelligent customer selection
+        customer = await selectBestCustomer(email);
 
         if (!customer) {
           return res.status(404).json({ error: 'Customer not found' });
@@ -629,7 +777,7 @@ app.get('/admin/dashboard', authenticateAdmin, (req, res) => {
   res.render('admin-dashboard', { 
     error: null, 
     message: null, 
-    customer: null, 
+    customers: [], 
     searchEmail: null 
   });
 });
@@ -642,36 +790,33 @@ app.post('/admin/lookup', authenticateAdmin, async (req, res) => {
     return res.render('admin-dashboard', { 
       error: 'Please enter a valid email address', 
       message: null, 
-      customer: null, 
+      customers: [], 
       searchEmail: customerEmail 
     });
   }
   
   try {
-    // Look up customer in Stripe
-    const customers = await stripe.customers.list({ 
-      email: customerEmail.toLowerCase().trim(), 
-      limit: 1 
-    });
+    // Get ALL customers for this email with summary data
+    const customersWithSummary = await getAllCustomersWithSummary(customerEmail);
     
-    if (customers.data.length === 0) {
+    if (customersWithSummary.length === 0) {
       return res.render('admin-dashboard', { 
-        error: `No customer found with email: ${customerEmail}`, 
+        error: `No customers found with email: ${customerEmail}`, 
         message: null, 
-        customer: null, 
+        customers: [], 
         searchEmail: customerEmail 
       });
     }
     
-    const customer = customers.data[0];
-    
     // Log the lookup for security audit
-    console.log(`🔍 Admin customer lookup: ${customerEmail} (${customer.id}) at ${new Date().toISOString()}`);
+    console.log(`🔍 Admin customer lookup: ${customerEmail} - found ${customersWithSummary.length} customer(s) at ${new Date().toISOString()}`);
     
     res.render('admin-dashboard', { 
       error: null, 
-      message: null, 
-      customer, 
+      message: customersWithSummary.length > 1 ? 
+        `Found ${customersWithSummary.length} customers with this email. The most active customer is shown first.` : 
+        null, 
+      customers: customersWithSummary, 
       searchEmail: customerEmail 
     });
     
@@ -680,7 +825,7 @@ app.post('/admin/lookup', authenticateAdmin, async (req, res) => {
     res.render('admin-dashboard', { 
       error: 'Failed to search for customer. Please try again.', 
       message: null, 
-      customer: null, 
+      customers: [], 
       searchEmail: customerEmail 
     });
   }
