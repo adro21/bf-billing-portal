@@ -457,15 +457,11 @@ app.get('/dashboard', authenticateToken, async (req, res) => {
     const customer = await selectBestCustomer(email);
 
     if (!customer) {
-      return res.render('dashboard', { 
-        email, 
-        error: 'We couldn\'t find any billing history for this email. Try using the one you signed up for Bounce Forward with.',
-        invoices: [],
-        subscriptions: [],
-        paymentMethods: [],
-        upcomingInvoice: null,
-        customerPortalUrl: null
-      });
+      // Clear the auth cookie and redirect to login with helpful error
+      res.clearCookie('auth');
+      return res.redirect('/?error=' + encodeURIComponent(
+        `No billing account found for ${email}. Please use the email address you signed up with, or contact support if you need help.`
+      ));
     }
 
     // Fetch comprehensive billing data in parallel
