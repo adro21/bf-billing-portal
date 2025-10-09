@@ -6,10 +6,10 @@
   "scripts": {
     "start": "node server.js",
     "dev": "nodemon server.js",
-    "setup": "node setup-env.js"
+    "setup": "node setup-env.js",
+    "test": "node test-resend.js"
   },
   "dependencies": {
-    "@sendgrid/mail": "^8.1.0",
     "cookie-parser": "^1.4.6",
     "dotenv": "^16.3.1",
     "ejs": "^3.1.9",
@@ -17,6 +17,7 @@
     "express-rate-limit": "^7.1.5",
     "jsonwebtoken": "^9.0.2",
     "jszip": "^3.10.1",
+    "resend": "^6.1.2",
     "stripe": "^13.11.0"
   },
   "devDependencies": {

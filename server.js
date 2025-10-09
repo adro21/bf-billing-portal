@@ -3,7 +3,7 @@ const express = require('express');
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
 const rateLimit = require('express-rate-limit');
-const sgMail = require('@sendgrid/mail');
+const { Resend } = require('resend');
 const Stripe = require('stripe');
 const JSZip = require('jszip');
 // Using built-in fetch (available in Node.js 18+)
@@ -13,7 +13,7 @@ const PORT = process.env.PORT || 3000;
 
 // Environment validation and Stripe client setup
 function validateEnvironment() {
-  const requiredVars = ['STRIPE_SECRET_KEY', 'JWT_SECRET', 'SENDGRID_API_KEY', 'SENDER_EMAIL', 'BASE_URL', 'ADMIN_PASSWORD'];
+  const requiredVars = ['STRIPE_SECRET_KEY', 'JWT_SECRET', 'RESEND_API_KEY', 'SENDER_EMAIL', 'BASE_URL', 'ADMIN_PASSWORD'];
   const missing = requiredVars.filter(varName => !process.env[varName]);
   
   if (missing.length > 0) {
@@ -53,9 +53,9 @@ function getStripeClient() {
 // Validate environment on startup
 validateEnvironment();
 
-// Initialize Stripe and SendGrid
+// Initialize Stripe and Resend
 const stripe = getStripeClient();
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 // Helper function to intelligently select the best customer for an email
 async function selectBestCustomer(email) {
@@ -318,15 +318,11 @@ app.post('/send-magic-link', magicLinkLimiter, async (req, res) => {
     const baseUrl = process.env.BASE_URL.replace(/\/$/, '');
     const magicLink = `${baseUrl}/verify?token=${token}`;
 
-    // Email content
-    const msg = {
-      to: email,
-      from: {
-        email: process.env.SENDER_EMAIL,
-        name: 'Bounce Forward Billing'
-      },
+    // Email content using Resend
+    const emailData = {
+      from: `Bounce Forward Billing <${process.env.SENDER_EMAIL}>`,
+      to: [email],
       subject: 'Access Bounce Forward Billing Portal',
-      text: `Click the following link to access your billing history: ${magicLink}\n\nThis link will expire in 15 minutes.`,
       html: `
         <table width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color: #E9E2E0; padding: 40px 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;">
           <tr>
@@ -412,7 +408,14 @@ app.post('/send-magic-link', magicLinkLimiter, async (req, res) => {
       `
     };
 
-    await sgMail.send(msg);
+    const { data, error: resendError } = await resend.emails.send(emailData);
+    
+    if (resendError) {
+      console.error('Error sending magic link:', resendError);
+      return res.redirect('/?error=Failed to send magic link. Please try again');
+    }
+    
+    console.log('✅ Magic link sent successfully:', data?.id);
     res.redirect('/?message=Magic link sent! Check your email and click the link to access your billing history');
   } catch (error) {
     console.error('Error sending magic link:', error);

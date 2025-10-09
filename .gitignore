@@ -93,4 +93,7 @@ ehthumbs.db
 Thumbs.db
 
 # Local development
-.local 
+.local .env.backup
+.env.bak
+*.backup
+*.bak

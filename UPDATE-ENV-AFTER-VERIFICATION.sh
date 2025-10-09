@@ -1,0 +1,21 @@
+#!/bin/bash
+
+echo "🎉 Domain Verified in Resend!"
+echo "=============================="
+echo ""
+echo "Now update your .env file to use your production email:"
+echo ""
+echo "Run this command:"
+echo ""
+echo "sed -i.bak 's/SENDER_EMAIL=onboarding@resend.dev/SENDER_EMAIL=billing@bounceforwardco.com/' .env"
+echo ""
+echo "Or manually edit .env and change:"
+echo "FROM: SENDER_EMAIL=onboarding@resend.dev"
+echo "TO:   SENDER_EMAIL=billing@bounceforwardco.com"
+echo ""
+echo "Then restart your server:"
+echo "  1. Press Ctrl+C to stop"
+echo "  2. Run: npm start"
+echo ""
+echo "✅ After that, you can send magic links to ANY customer email!"
+
